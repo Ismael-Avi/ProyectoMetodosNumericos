@@ -268,3 +268,38 @@ def grafica_caras(sesion, sesion_calibrada, caras, g):
     _aplicar_estilo(ejes[1], "Magnitud de la gravedad en cada cara", "tiempo (s)", "|a| (m/s²)")
     figura.tight_layout()
     return figura
+
+
+# ---------------------------------------------------------------------------
+# Métodos numéricos
+# ---------------------------------------------------------------------------
+
+COLORES_DE_METODOS = ["#2a78d6", "#eb6834", "#1baf7a"]
+
+
+def grafica_convergencia(pasos, errores_por_metodo, titulo, etiqueta_x, etiqueta_y):
+    """Error de cada método según el paso h, en escala logarítmica en los dos ejes.
+
+    En esta escala un error proporcional a h^p se ve como una recta de pendiente p: cuanto
+    más inclinada la recta, más rápido mejora el método al reducir el paso.
+
+    errores_por_metodo: diccionario {nombre del método: arreglo de errores, uno por paso}.
+    """
+    figura, eje = plt.subplots(figsize=(7.5, 4.8))
+    for (nombre, errores), color in zip(errores_por_metodo.items(), COLORES_DE_METODOS):
+        eje.loglog(pasos, errores, "o-", color=color, linewidth=2, markersize=5, label=nombre)
+    _leyenda_arriba(eje)
+    _aplicar_estilo(eje, titulo, etiqueta_x, etiqueta_y)
+    return figura
+
+
+def grafica_iteraciones_raices(errores_por_metodo, titulo):
+    """Error de cada método de raíces en cada iteración (eje vertical logarítmico)."""
+    figura, eje = plt.subplots(figsize=(7.5, 4.8))
+    for (nombre, errores), color in zip(errores_por_metodo.items(), COLORES_DE_METODOS):
+        iteraciones = np.arange(1, len(errores) + 1)
+        eje.semilogy(iteraciones, errores, "o-", color=color, linewidth=2, markersize=5,
+                     label=nombre)
+    _leyenda_arriba(eje)
+    _aplicar_estilo(eje, titulo, "iteración", "error |x − raíz|")
+    return figura

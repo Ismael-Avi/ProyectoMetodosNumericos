@@ -165,3 +165,42 @@ grupo. Los comandos se corren desde la carpeta `procesamiento/` con el entorno v
   descarga una versión distinta y no compila, fijarla con `platform = espressif32@<versión>`.
 - La opción de Arduino IDE del README no se ha probado.
 - Lista completa de comprobaciones con hardware: `docs/PENDIENTES_HARDWARE.md`.
+
+---
+
+## Etapa 5: métodos numéricos hechos a mano
+
+**Qué se hizo**
+- `navinercial/metodos/integracion.py`: integral acumulada por rectángulo (Euler), trapecio y
+  Simpson. Las tres aceptan tiempos con espaciado irregular.
+- `navinercial/metodos/interpolacion.py`: interpolación lineal y spline cúbico natural (con el
+  sistema tridiagonal resuelto por el algoritmo de Thomas, también a mano).
+- `navinercial/metodos/raices.py`: bisección (ya estaba), Newton y secante. Las tres aceptan una
+  lista `historial` para contar iteraciones.
+- `scripts/comparar_metodos.py`: tablas y gráficas de convergencia en `resultados/metodos/`.
+- Pruebas contra soluciones analíticas y contra `numpy`/`scipy` (`cumulative_trapezoid`, `simpson`,
+  `np.interp`, `CubicSpline`, `brentq`, `np.linalg.solve`).
+
+**Resultados**
+- Orden de convergencia medido: rectángulo 1,00; trapecio 2,00; Simpson 4,00; interpolación lineal
+  2,00; spline 4,00. Coinciden con la teoría.
+- Con el paso del sensor (0,005 s) e integrando cos(t) durante 10 s, el error del método es
+  5·10⁻³ m/s (rectángulo), 2·10⁻⁶ m/s (trapecio) y 2·10⁻¹¹ m/s (Simpson).
+- Raíz de x³ − 2x − 5 con paso menor que 10⁻¹³: bisección 44 iteraciones, Newton 6, secante 7.
+
+**Decisiones**
+- Simpson acumulativo: las muestras se toman de tres en tres y por cada trío pasa una parábola
+  (forma de Newton, diferencias divididas). Así da un valor en CADA muestra, no solo en las pares,
+  y funciona con paso irregular. Con paso uniforme es la fórmula clásica h/3·(y0 + 4y1 + y2).
+- De numpy solo se usan operaciones básicas de arreglos: restas, productos, `cumsum` (suma
+  acumulada) y `searchsorted` (búsqueda del intervalo). Las fórmulas de cada método están escritas
+  a mano.
+- Fuera del intervalo de datos la interpolación no extrapola: devuelve el valor del extremo.
+- Spline "natural" (segunda derivada cero en los extremos): es el más simple de explicar. Cerca de
+  los extremos es menos exacto; por eso la comparación se hace en la zona central.
+
+**Qué revisar**
+- Que el grupo pueda deducir en la pizarra las dos fórmulas de `_aportes_de_parabola` y la ecuación
+  del spline (están en los docstrings).
+- Si el profesor exige Simpson solo con paso uniforme, la función ya lo cubre (es un caso
+  particular).
