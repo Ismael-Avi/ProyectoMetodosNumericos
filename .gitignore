@@ -1,0 +1,15 @@
+# Entorno virtual y archivos temporales de Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Sesiones de datos y resultados: se generan con el simulador y los scripts,
+# y pueden pesar mucho. Solo se guarda el .gitkeep para conservar la carpeta.
+procesamiento/datos/*
+!procesamiento/datos/.gitkeep
+procesamiento/resultados/*
+!procesamiento/resultados/.gitkeep
+
+# Editor
+.vscode/
