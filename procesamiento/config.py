@@ -84,6 +84,30 @@ REQUISITO_DURACION_MIN = 90.0       # 90 minutos de registro continuo sin perder
 VERIF_VENTANA_FRECUENCIA_S = 60.0
 
 # ---------------------------------------------------------------------------
+# Caracterización y calibración
+# ---------------------------------------------------------------------------
+
+# Detector de quietud. El registro se divide en bloques de esta duración y un bloque se
+# considera "quieto" si las señales casi no varían dentro de él.
+QUIETUD_VENTANA_S = 0.5
+# Umbrales: desviación estándar máxima de cada eje dentro del bloque. Deben ser un poco
+# mayores que el ruido del sensor en reposo (aquí, unas 2 veces el ruido del simulador).
+# TODO: ajustar con el ruido medido en el reposo del dispositivo real.
+QUIETUD_UMBRAL_ACCEL_STD_MS2 = 0.06                 # m/s²
+QUIETUD_UMBRAL_GYRO_STD_RADS = math.radians(0.25)   # rad/s
+# Velocidad angular media máxima en el bloque. Tiene que ser mayor que el sesgo del
+# giroscopio (que no se conoce antes de calibrar) y menor que un giro lento hecho a mano.
+# TODO: ajustar con el sesgo real del giroscopio.
+QUIETUD_UMBRAL_GYRO_MEDIA_RADS = math.radians(3.0)  # rad/s
+
+# Calibración de seis caras.
+CARAS_DURACION_MINIMA_S = 10.0   # un tramo quieto más corto que esto no cuenta como cara
+CARAS_MARGEN_S = 1.0             # se descarta este tiempo al inicio y al final de cada cara
+# En una cara bien apoyada, un eje mide casi toda la gravedad. Si el mayor eje mide menos
+# que esta fracción de g, el dispositivo estaba inclinado y el tramo no se usa.
+CARAS_FRACCION_MINIMA_DE_G = 0.8
+
+# ---------------------------------------------------------------------------
 # Barómetro BMP280
 # ---------------------------------------------------------------------------
 

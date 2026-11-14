@@ -183,3 +183,88 @@ def grafica_senales(sesion):
     ejes[-1].set_xlabel(etiqueta_tiempo, fontsize=9, color=COLOR_TEXTO_SECUNDARIO)
     figura.tight_layout()
     return figura
+
+
+# ---------------------------------------------------------------------------
+# Caracterización y calibración
+# ---------------------------------------------------------------------------
+
+def grafica_ruido_reposo(sesion, caracterizacion):
+    """Histograma del ruido de cada eje del acelerómetro y del giroscopio en reposo.
+
+    A cada señal se le resta su media, para ver solo cómo se reparte alrededor de ella.
+    """
+    figura, ejes = plt.subplots(2, 3, figsize=(12, 6))
+    columnas = [["ax", "ay", "az"], ["gx", "gy", "gz"]]
+    for fila in range(2):
+        for columna_panel, columna in enumerate(columnas[fila]):
+            eje = ejes[fila, columna_panel]
+            valores = sesion.imu[columna].to_numpy()
+            datos = caracterizacion.loc[columna]
+            eje.hist(valores - datos["media"], bins=60, color=COLOR_EJE[columna[-1]])
+            _aplicar_estilo(
+                eje, f"{columna}: media {datos['media']:.4f}, ruido {datos['ruido']:.4f}",
+                f"{columna} − media ({datos['unidad']})", "cantidad de muestras")
+    figura.tight_layout()
+    return figura
+
+
+def grafica_allan(curvas_accel, curvas_gyro):
+    """Desviación de Allan del acelerómetro y del giroscopio (escalas logarítmicas).
+
+    curvas_accel, curvas_gyro: diccionarios {columna: (taus, desviaciones)}.
+    """
+    figura, ejes = plt.subplots(1, 2, figsize=(12, 4.5))
+    paneles = [(ejes[0], curvas_accel, "Acelerómetro", "desviación de Allan (m/s²)"),
+               (ejes[1], curvas_gyro, "Giroscopio", "desviación de Allan (rad/s)")]
+    for eje, curvas, titulo, etiqueta_y in paneles:
+        for columna, (taus, desviaciones) in curvas.items():
+            eje.loglog(taus, desviaciones, "-o", markersize=3, linewidth=1.5,
+                       color=COLOR_EJE[columna[-1]], label=f"eje {columna[-1]}")
+        _leyenda_arriba(eje)
+        _aplicar_estilo(eje, titulo, "tiempo de promediado τ (s)", etiqueta_y)
+    figura.tight_layout()
+    return figura
+
+
+def _magnitud_promediada(tabla, t, en_cara, muestras_por_punto=100):
+    """Magnitud del acelerómetro promediada en grupos, para que el ruido no tape el valor."""
+    magnitud = np.linalg.norm(tabla.loc[en_cara, ["ax", "ay", "az"]].to_numpy(), axis=1)
+    n_grupos = max(1, len(magnitud) // muestras_por_punto)
+    usadas = n_grupos * min(muestras_por_punto, len(magnitud))
+    tiempos = t[en_cara][:usadas].reshape(n_grupos, -1).mean(axis=1)
+    return tiempos, magnitud[:usadas].reshape(n_grupos, -1).mean(axis=1)
+
+
+def grafica_caras(sesion, sesion_calibrada, caras, g):
+    """Seis caras: las caras detectadas y la magnitud de la gravedad antes y después de calibrar.
+
+    Si la calibración es buena, la magnitud calibrada vale g en todas las caras.
+    """
+    figura, ejes = plt.subplots(2, 1, figsize=(11, 7), sharex=True)
+    t = sesion.imu["t_s"].to_numpy()
+
+    _dibujar_tres_ejes(ejes[0], t, sesion.imu, ["ax", "ay", "az"])
+    for _, cara in caras.iterrows():
+        ejes[0].axvspan(cara["t_inicio_s"], cara["t_fin_s"], color=COLOR_REJILLA, alpha=0.6, lw=0)
+        ejes[0].text((cara["t_inicio_s"] + cara["t_fin_s"]) / 2, 0.75, cara["cara"],
+                     transform=ejes[0].get_xaxis_transform(), ha="center", va="center",
+                     fontsize=12, color=COLOR_TEXTO)
+    _aplicar_estilo(ejes[0], "Acelerómetro sin calibrar y caras detectadas (zonas grises)",
+                    etiqueta_y="aceleración (m/s²)")
+
+    # Magnitud solo en los tramos quietos (en los giros no tiene por qué valer g).
+    series = [(sesion.imu, "#898781", "sin calibrar"),
+              (sesion_calibrada.imu, COLOR_SERIE, "calibrado")]
+    for numero, (_, cara) in enumerate(caras.iterrows()):
+        en_cara = (t >= cara["t_inicio_s"]) & (t <= cara["t_fin_s"])
+        for tabla, color, etiqueta in series:
+            tiempos, promedios = _magnitud_promediada(tabla, t, en_cara)
+            ejes[1].plot(tiempos, promedios, linewidth=1.5, color=color,
+                         label=etiqueta if numero == 0 else None)
+    ejes[1].axhline(g, color=COLOR_REFERENCIA, linewidth=1, linestyle="--",
+                    label=f"g de Quito ({g} m/s²)")
+    _leyenda_arriba(ejes[1])
+    _aplicar_estilo(ejes[1], "Magnitud de la gravedad en cada cara", "tiempo (s)", "|a| (m/s²)")
+    figura.tight_layout()
+    return figura
