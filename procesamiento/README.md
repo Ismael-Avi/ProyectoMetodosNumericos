@@ -66,6 +66,21 @@ Muestra el reporte en pantalla y guarda en `resultados/verificacion/<nombre de l
 
 Con los datos reales se usa igual: solo cambia la ruta de la sesión.
 
+## Caracterizar el sensor y calibrar
+
+```powershell
+python -m scripts.caracterizar_reposo [RUTA_DE_LA_SESION]    # por defecto, el reposo simulado
+python -m scripts.calibrar_seis_caras [RUTA_DE_LA_SESION]    # por defecto, las seis caras simuladas
+```
+
+- `caracterizar_reposo` guarda en `resultados/caracterizacion/<sesión>/` la media, la desviación y
+  el ruido de cada señal, el porcentaje de tiempo que el detector de quietud dice "quieto", el
+  histograma del ruido (`ruido.png`) y la desviación de Allan (`allan.png`).
+- `calibrar_seis_caras` detecta sola las seis caras, calcula el sesgo y la escala de cada eje con
+  la gravedad de Quito y guarda la calibración en `resultados/calibracion/calibracion.json`, que
+  usan los análisis siguientes. Con una sesión simulada, el reporte compara el resultado con los
+  valores que puso el simulador.
+
 ## Formato de los archivos
 
 El formato de una sesión está definido en un solo lugar: `navinercial/formato.py`. Si el firmware
