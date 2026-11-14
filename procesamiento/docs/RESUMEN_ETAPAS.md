@@ -204,3 +204,82 @@ grupo. Los comandos se corren desde la carpeta `procesamiento/` con el entorno v
   del spline (están en los docstrings).
 - Si el profesor exige Simpson solo con paso uniforme, la función ya lo cubre (es un caso
   particular).
+
+---
+
+## Etapa 6: análisis del ascensor
+
+**Qué se hizo**
+- Simulador: escenario `ascensor` (edificio SINTÉTICO de 6 plantas con alturas distintas, 21
+  recorridos, 42 pulsaciones del botón, dispositivo inclinado 1,8°). El barómetro simulado ahora
+  depende de la altura. Se guarda `verdad_escenario.json` con los pisos y el itinerario.
+- `navinercial/barometro.py`: fórmula barométrica Δh = (R·T/(M·g))·ln(P_ref/P), con g de Quito.
+- `navinercial/correcciones.py`: paradas a partir del botón, sesgo medido en cada parada, ZUPT.
+- `navinercial/fusion.py`: filtro complementario y filtro de Kalman 1D (estado: altura y velocidad),
+  escritos a mano. El Kalman acepta la altura barométrica y la medición "velocidad = 0" en paradas.
+- `navinercial/ascensor.py`: aceleración vertical, integración, todas las estimaciones, error por
+  recorrido, cruce de pisos por bisección y secante.
+- `navinercial/prediccion_error.py`: fórmulas del crecimiento del error.
+- `scripts/analizar_ascensor.py` y `scripts/predecir_error_ascensor.py` (Monte Carlo).
+- `datos_referencia/pisos_ascensor.csv`: plantilla VACÍA para las alturas reales (flexómetro).
+
+**Resultados con el ascensor simulado (7,7 min, con calibración de seis caras)**
+
+| Estimación | Error RMS por recorrido | Error RMS de altura |
+|---|---|---|
+| Inercial, sin correcciones (g nominal) | 1,52 m | 11,5 m |
+| Inercial, sesgo del reposo inicial | 0,40 m | 1,9 m |
+| Inercial, sesgo en paradas + ZUPT | 0,028 m | 0,053 m |
+| Solo barómetro | 0,030 m | 0,23 m |
+| Complementario (con barómetro) | 0,032 m | 0,20 m |
+| Kalman sin barómetro (ZUPT) | 0,024 m | 0,047 m |
+| Kalman con barómetro | 0,034 m | 0,20 m |
+| Kalman con barómetro y ZUPT | 0,030 m | 0,19 m |
+
+- Sin calibración de seis caras y sin correcciones el error llega a 42 km (el sesgo de 0,25 m/s² del
+  eje z integrado dos veces durante 460 s). Con solo restar el sesgo del reposo inicial baja a 4 m.
+- El ZUPT mejora el error por recorrido unas 14 veces respecto a restar solo el sesgo inicial.
+- Error solo del método (aceleración exacta, sin sensor): rectángulo 7,7 mm; trapecio 0,013 mm;
+  Simpson 0,003 mm. El error del sensor es miles de veces mayor: **el método casi no importa, el
+  sensor sí**. Con datos del sensor, Simpson incluso da un resultado algo peor que el trapecio,
+  porque pesa las muestras 4/3 y 2/3 y eso amplifica un poco el ruido.
+- Cruce de pisos: la bisección encuentra los 35 cruces (18 iteraciones para 0,1 ms); la secante
+  falla en 10 de 35 porque parte de un tramo plano (las paradas). Error del instante: hasta 0,2 s.
+- Monte Carlo (40 semillas): con ZUPT, el error medio y la dispersión de cada recorrido coinciden
+  con las fórmulas (error de escala · desplazamiento; σ·√(dt·T³/12)). Sin ZUPT, la dispersión
+  predicha queda entre 7 % y 15 % por debajo de la observada.
+
+**Decisiones**
+- Vertical medida en el reposo inicial (promedio del acelerómetro): así una inclinación pequeña del
+  dispositivo no importa. Se supone que el dispositivo no gira durante el registro; por eso no se
+  usa el giroscopio en el ascensor.
+- La gravedad que se resta es la MEDIDA en el reposo inicial, no 9,77: eso quita de una vez el
+  sesgo y el error de escala sobre g.
+- Convención del botón: pulsaciones alternadas salida/llegada (cierre/apertura de puertas); el
+  registro empieza y termina parado. Se descarta 0,5 s en cada borde de cada parada.
+- ZUPT en dos pasos: (1) el sesgo se mide en cada parada y se interpola entre paradas; (2) el error
+  de velocidad se interpola linealmente entre paradas y se resta.
+- El detector de quietud no se usa para las paradas del ascensor: a velocidad constante el
+  acelerómetro mide lo mismo que en reposo. Se usan las pulsaciones.
+- Kalman de 2 estados (altura, velocidad), sin estado de sesgo: es el más simple de explicar. El
+  sesgo se quita antes. Limitación: si queda un sesgo, deja un error fijo (no crece).
+- El barómetro se usa en el Kalman en sus propios instantes (no interpolado), para no contar la
+  misma medición varias veces. Para el complementario sí se interpola a la base de tiempo del IMU.
+- Fórmula barométrica isotérmica con la temperatura del BMP280 y g = 9,77. Para decenas de metros
+  es equivalente a la fórmula internacional y todas sus constantes se pueden justificar.
+
+**Qué revisar (importante)**
+- **Fusión con barómetro vs. ZUPT:** en la simulación, la mejor altura absoluta la da el ZUPT sin
+  barómetro, porque el barómetro simulado deriva con el "clima" (unos 0,4 m en 8 min; valores
+  SINTÉTICOS de `config.py`). Con datos reales puede ser al revés. Por recorrido, todos dan ≈3 cm.
+  Hay que medir la deriva real de la presión (reposo a distintas horas) antes de concluir.
+- La comparación "con y sin barómetro" está en las filas Kalman sin barómetro / con barómetro.
+- `KALMAN_*` y `COMPLEMENTARIO_TAU_S` en `config.py` están ajustados al simulador.
+- La predicción sin ZUPT queda algo por debajo de Monte Carlo; no se encontró la causa exacta
+  (probablemente términos cruzados que las fórmulas simples no incluyen). Para el informe: decir
+  "coincide dentro de un 15 %".
+- El simulador usa la misma fórmula barométrica que el análisis: el error del MODELO barométrico
+  no aparece en la simulación. Solo se verá con datos reales y el flexómetro.
+- Temperatura: el BMP280 mide la del dispositivo, no la del aire. Un error de 3 K cambia la altura 1 %.
+- En el experimento real hay que anotar en la bitácora el piso de cada parada (opción
+  `--itinerario`); si no, el programa asigna el piso más cercano.

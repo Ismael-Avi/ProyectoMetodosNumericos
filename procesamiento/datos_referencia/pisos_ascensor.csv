@@ -1,0 +1,7 @@
+# Alturas REALES de los pisos del edificio donde se haga el experimento del ascensor.
+# TODO: medir con flexómetro y llenar. Este archivo está vacío a propósito: no se inventan datos.
+#   piso:     0 = planta donde empieza el registro, 1, 2, ...
+#   altura_m: altura del piso de cada planta sobre la planta 0, en metros
+#   fuente:   cómo se midió (p. ej. "flexómetro, 2026-11-18, suma de contrahuellas")
+# Uso: python -m scripts.analizar_ascensor datos/sesion_NNN --pisos datos_referencia/pisos_ascensor.csv --itinerario 0,3,5,...
+piso,altura_m,fuente

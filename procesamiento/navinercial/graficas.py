@@ -303,3 +303,109 @@ def grafica_iteraciones_raices(errores_por_metodo, titulo):
     _leyenda_arriba(eje)
     _aplicar_estilo(eje, titulo, "iteración", "error |x − raíz|")
     return figura
+
+
+# ---------------------------------------------------------------------------
+# Ascensor
+# ---------------------------------------------------------------------------
+
+COLORES_DE_SERIES = ["#2a78d6", "#eb6834", "#1baf7a", "#8a5cd6"]
+COLOR_VERDAD = "#52514e"
+COLOR_EVENTO = "#898781"
+
+
+def _marcar_eventos(eje, tiempos_eventos_s):
+    """Marca cada pulsación del botón con una raya corta en la parte baja del panel."""
+    for t_evento in tiempos_eventos_s:
+        eje.axvline(t_evento, ymin=0.0, ymax=0.04, color=COLOR_EVENTO, linewidth=1)
+
+
+def _dibujar_series(eje, t_s, series, verdad=None):
+    """Dibuja varias curvas (diccionario nombre -> valores) y, si hay, la verdad en gris."""
+    if verdad is not None:
+        t_d, v_d = _diezmar(t_s, verdad)
+        eje.plot(t_d, v_d, color=COLOR_VERDAD, linewidth=3, alpha=0.35, label="verdad (simulador)")
+    for (nombre, valores), color in zip(series.items(), COLORES_DE_SERIES):
+        t_d, v_d = _diezmar(t_s, valores)
+        eje.plot(t_d, v_d, color=color, linewidth=1.3, label=nombre)
+
+
+def grafica_ascensor(t_s, alturas, velocidades, tiempos_eventos_s, alturas_pisos_m=None,
+                     verdad_altura=None, verdad_velocidad=None):
+    """Altura (arriba) y velocidad (abajo) del ascensor en el tiempo.
+
+    alturas, velocidades: diccionarios {nombre de la estimación: arreglo}.
+    alturas_pisos_m: alturas de referencia de los pisos (líneas horizontales), o None.
+    """
+    figura, (eje_h, eje_v) = plt.subplots(2, 1, figsize=(12, 8), sharex=True,
+                                          height_ratios=[3, 2])
+    if alturas_pisos_m is not None:
+        for numero, altura_piso in enumerate(alturas_pisos_m):
+            eje_h.axhline(altura_piso, color=COLOR_REJILLA, linewidth=1.2, zorder=0)
+            eje_h.annotate(f"piso {numero}", (t_s[-1], altura_piso), xytext=(4, 0),
+                           textcoords="offset points", fontsize=8, va="center",
+                           color=COLOR_TEXTO_SECUNDARIO, annotation_clip=False)
+    _dibujar_series(eje_h, t_s, alturas, verdad_altura)
+    _marcar_eventos(eje_h, tiempos_eventos_s)
+    _leyenda_arriba(eje_h, columnas=4)
+    _aplicar_estilo(eje_h, "Altura", None, "altura sobre el punto de partida (m)")
+    eje_h.grid(False)
+
+    _dibujar_series(eje_v, t_s, velocidades, verdad_velocidad)
+    _marcar_eventos(eje_v, tiempos_eventos_s)
+    _aplicar_estilo(eje_v, "Velocidad vertical (rayas grises abajo: pulsaciones del botón)",
+                    "tiempo (s)", "velocidad (m/s)")
+    figura.tight_layout()
+    return figura
+
+
+def grafica_errores_en_el_tiempo(t_s, errores_arriba, errores_abajo, titulo_arriba, titulo_abajo,
+                                 etiqueta_y="error de altura (m)"):
+    """Error de varias estimaciones en el tiempo, en dos paneles con escalas distintas.
+
+    Arriba van las estimaciones con error grande y abajo las de error pequeño; en un solo
+    panel las segundas se verían como una línea plana.
+    """
+    figura, (eje_a, eje_b) = plt.subplots(2, 1, figsize=(12, 7.5), sharex=True)
+    for eje, errores, titulo in [(eje_a, errores_arriba, titulo_arriba),
+                                 (eje_b, errores_abajo, titulo_abajo)]:
+        _dibujar_series(eje, t_s, errores)
+        eje.axhline(0.0, color=COLOR_REFERENCIA, linewidth=1)
+        _leyenda_arriba(eje, columnas=2)
+        _aplicar_estilo(eje, titulo, None, etiqueta_y)
+    eje_b.set_xlabel("tiempo (s)", fontsize=9, color=COLOR_TEXTO_SECUNDARIO)
+    figura.tight_layout()
+    return figura
+
+
+def grafica_comparacion(valores_por_nombre, titulo, etiqueta_x):
+    """Compara un número por estimación (por ejemplo el error RMS) con puntos en escala log.
+
+    Se usa escala logarítmica porque los errores van de centímetros a kilómetros. Cada punto
+    lleva su valor escrito al lado.
+    """
+    nombres = list(valores_por_nombre)[::-1]          # el primero queda arriba
+    valores = [valores_por_nombre[n] for n in nombres]
+    figura, eje = plt.subplots(figsize=(9, 0.5 * len(nombres) + 1.6))
+    eje.scatter(valores, range(len(nombres)), s=60, color=COLOR_SERIE, zorder=3)
+    for posicion, valor in enumerate(valores):
+        eje.annotate(f"{valor:.3g}", (valor, posicion), xytext=(8, 0),
+                     textcoords="offset points", fontsize=9, va="center", color=COLOR_TEXTO)
+    eje.set_xscale("log")
+    eje.set_yticks(range(len(nombres)), nombres)
+    eje.margins(x=0.15, y=0.12)
+    _aplicar_estilo(eje, titulo, etiqueta_x, None)
+    eje.tick_params(axis="y", labelsize=9, colors=COLOR_TEXTO)
+    return figura
+
+
+def grafica_prediccion(t_s, observado, predicho, titulo, etiqueta_y, nombre_observado,
+                       nombre_predicho):
+    """Compara una curva observada (línea) con la predicha por las fórmulas (línea de trazos)."""
+    figura, eje = plt.subplots(figsize=(8.5, 4.8))
+    t_d, o_d, p_d = _diezmar(t_s, observado, predicho)
+    eje.plot(t_d, o_d, color=COLOR_SERIE, linewidth=2, label=nombre_observado)
+    eje.plot(t_d, p_d, color=COLOR_EJE["y"], linewidth=2, linestyle="--", label=nombre_predicho)
+    _leyenda_arriba(eje, columnas=2)
+    _aplicar_estilo(eje, titulo, "tiempo (s)", etiqueta_y)
+    return figura
