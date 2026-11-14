@@ -1,0 +1,185 @@
+"""Gráficas del proyecto (matplotlib). Cada función devuelve la figura; guardar_figura la escribe.
+
+Estilo común: un solo eje vertical por panel, una magnitud por panel, rejilla tenue y los
+mismos tres colores para los ejes x, y, z en todas las gráficas.
+"""
+
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")   # dibuja a archivos, sin abrir ventanas
+import matplotlib.pyplot as plt
+import numpy as np
+
+from navinercial import verificacion
+
+# Colores de los ejes x, y, z (se distinguen también con daltonismo) y tonos neutros.
+COLOR_EJE = {"x": "#2a78d6", "y": "#eb6834", "z": "#1baf7a"}
+COLOR_SERIE = "#2a78d6"
+COLOR_REFERENCIA = "#52514e"
+COLOR_REJILLA = "#e1e0d9"
+COLOR_TEXTO = "#0b0b0b"
+COLOR_TEXTO_SECUNDARIO = "#52514e"
+
+# Para dibujar no hace falta cada muestra: con más puntos que estos la gráfica se ve igual
+# y tarda mucho más. Solo afecta al dibujo, nunca a los cálculos.
+MAX_PUNTOS_POR_CURVA = 20000
+
+
+def _aplicar_estilo(eje, titulo=None, etiqueta_x=None, etiqueta_y=None):
+    """Estilo común de un panel: rejilla tenue, sin bordes superior ni derecho."""
+    eje.grid(True, color=COLOR_REJILLA, linewidth=0.8)
+    eje.set_axisbelow(True)
+    for lado in ["top", "right"]:
+        eje.spines[lado].set_visible(False)
+    for lado in ["left", "bottom"]:
+        eje.spines[lado].set_color("#c3c2b7")
+    eje.tick_params(colors=COLOR_TEXTO_SECUNDARIO, labelsize=9)
+    if titulo:
+        eje.set_title(titulo, fontsize=11, color=COLOR_TEXTO, loc="left")
+    if etiqueta_x:
+        eje.set_xlabel(etiqueta_x, fontsize=9, color=COLOR_TEXTO_SECUNDARIO)
+    if etiqueta_y:
+        eje.set_ylabel(etiqueta_y, fontsize=9, color=COLOR_TEXTO_SECUNDARIO)
+
+
+def _leyenda_arriba(eje, columnas=3):
+    """Leyenda sobre el panel, a la derecha del título, para que no tape los datos."""
+    eje.legend(fontsize=8, ncols=columnas, loc="lower right", bbox_to_anchor=(1.0, 1.0),
+               frameon=False, borderaxespad=0.2)
+
+
+def _diezmar(*arreglos):
+    """Toma una muestra de cada "paso" para que no queden más de MAX_PUNTOS_POR_CURVA puntos."""
+    paso = max(1, len(arreglos[0]) // MAX_PUNTOS_POR_CURVA)
+    return [np.asarray(arreglo)[::paso] for arreglo in arreglos]
+
+
+def _escala_de_tiempo(duracion_s):
+    """Elige minutos para registros largos y segundos para registros cortos."""
+    if duracion_s > 600:
+        return 1 / 60.0, "tiempo (min)"
+    return 1.0, "tiempo (s)"
+
+
+def guardar_figura(figura, ruta):
+    """Guarda la figura como PNG (crea la carpeta si no existe) y la cierra."""
+    ruta = Path(ruta)
+    ruta.parent.mkdir(parents=True, exist_ok=True)
+    figura.savefig(ruta, dpi=130, bbox_inches="tight", facecolor="white")
+    plt.close(figura)
+    return ruta
+
+
+# ---------------------------------------------------------------------------
+# Verificación
+# ---------------------------------------------------------------------------
+
+def grafica_intervalos(sesion, verificaciones):
+    """Intervalo entre muestras: en el tiempo (izquierda) y su histograma (derecha).
+
+    En el tiempo se dibujan TODOS los intervalos (los huecos se ven como puntos altos, marcados
+    con un círculo). El histograma solo usa muestras consecutivas y muestra el jitter.
+    """
+    figura, ejes = plt.subplots(2, 2, figsize=(12, 6.5), width_ratios=[2, 1])
+    tablas = {"imu": sesion.imu, "baro": sesion.baro}
+    for fila, (nombre, tabla) in enumerate(tablas.items()):
+        v = verificaciones[nombre]
+        seq, t_s = tabla["seq"].to_numpy(), tabla["t_s"].to_numpy()
+        factor, etiqueta_tiempo = _escala_de_tiempo(v.duracion_s)
+        periodo_nominal_ms = 1000.0 / v.fs_nominal_hz
+
+        eje = ejes[fila, 0]
+        eje.plot(t_s[1:] * factor, np.diff(t_s) * 1000, ".", markersize=1.5,
+                 color=COLOR_SERIE, rasterized=True)
+        eje.plot(v.huecos["t_s"] * factor, v.huecos["intervalo_s"] * 1000, "o", markersize=6,
+                 markerfacecolor="none", color="#d03b3b", label=f"huecos ({len(v.huecos)})")
+        eje.axhline(periodo_nominal_ms, color=COLOR_REFERENCIA, linewidth=1, linestyle="--",
+                    label=f"período nominal ({periodo_nominal_ms:.1f} ms)")
+        _leyenda_arriba(eje, columnas=2)
+        _aplicar_estilo(eje, f"{nombre}: intervalo entre muestras", etiqueta_tiempo,
+                        "intervalo (ms)")
+
+        eje = ejes[fila, 1]
+        intervalos_us = verificacion.intervalos_consecutivos_us(seq, t_s)
+        eje.hist(intervalos_us, bins=60, color=COLOR_SERIE)
+        eje.axvline(periodo_nominal_ms * 1000, color=COLOR_REFERENCIA, linewidth=1, linestyle="--")
+        _aplicar_estilo(
+            eje, f"{nombre}: jitter (desviación {v.intervalo['std_us']:.0f} µs)",
+            "intervalo entre muestras consecutivas (µs)", "cantidad de muestras")
+    figura.tight_layout()
+    return figura
+
+
+def grafica_frecuencia(sesion, verificaciones):
+    """Frecuencia de muestreo real en ventanas consecutivas, comparada con la nominal."""
+    figura, ejes = plt.subplots(2, 1, figsize=(10, 6), sharex=True)
+    tablas = {"imu": sesion.imu, "baro": sesion.baro}
+    for eje, (nombre, tabla) in zip(ejes, tablas.items()):
+        v = verificaciones[nombre]
+        factor, etiqueta_tiempo = _escala_de_tiempo(v.duracion_s)
+        centros, frecuencias = verificacion.frecuencia_por_ventanas(
+            tabla["seq"], tabla["t_s"], v.ventana_s)
+
+        eje.plot(centros * factor, frecuencias, "-o", markersize=3, linewidth=1.5,
+                 color=COLOR_SERIE, label=f"real, en ventanas de {v.ventana_s:.0f} s")
+        eje.axhline(v.fs_nominal_hz, color=COLOR_REFERENCIA, linewidth=1, linestyle="--",
+                    label=f"nominal ({v.fs_nominal_hz:g} Hz)")
+        eje.ticklabel_format(useOffset=False, axis="y")
+        _leyenda_arriba(eje, columnas=2)
+        _aplicar_estilo(
+            eje, f"{nombre}: inicio {v.fs_inicio_hz:.4f} Hz, final {v.fs_final_hz:.4f} Hz",
+            etiqueta_y="frecuencia real (Hz)")
+    ejes[-1].set_xlabel(etiqueta_tiempo, fontsize=9, color=COLOR_TEXTO_SECUNDARIO)
+    figura.tight_layout()
+    return figura
+
+
+# ---------------------------------------------------------------------------
+# Señales
+# ---------------------------------------------------------------------------
+
+def _dibujar_tres_ejes(eje, t, tabla, columnas):
+    """Dibuja las tres componentes (x, y, z) de un sensor en un mismo panel."""
+    for columna in columnas:
+        letra = columna[-1]
+        validas = tabla[columna].notna().to_numpy()   # el magnetómetro tiene celdas vacías
+        t_dibujo, valores = _diezmar(t[validas], tabla[columna].to_numpy()[validas])
+        eje.plot(t_dibujo, valores, linewidth=0.7, color=COLOR_EJE[letra], label=f"eje {letra}")
+    _leyenda_arriba(eje, columnas=3)
+
+
+def grafica_senales(sesion):
+    """Señales de la sesión en unidades físicas: un panel por magnitud."""
+    hay_magnetometro = sesion.meta["tiene_magnetometro"]
+    n_paneles = 5 if hay_magnetometro else 4
+    figura, ejes = plt.subplots(n_paneles, 1, figsize=(11, 2.4 * n_paneles), sharex=True)
+    factor, etiqueta_tiempo = _escala_de_tiempo(sesion.imu["t_s"].iloc[-1])
+    t_imu = sesion.imu["t_s"].to_numpy() * factor
+    t_baro = sesion.baro["t_s"].to_numpy() * factor
+
+    _dibujar_tres_ejes(ejes[0], t_imu, sesion.imu, ["ax", "ay", "az"])
+    _aplicar_estilo(ejes[0], "Acelerómetro (sin calibrar)", etiqueta_y="aceleración (m/s²)")
+
+    _dibujar_tres_ejes(ejes[1], t_imu, sesion.imu, ["gx", "gy", "gz"])
+    _aplicar_estilo(ejes[1], "Giroscopio (sin calibrar)", etiqueta_y="velocidad angular (rad/s)")
+
+    ejes[2].plot(*_diezmar(t_baro, sesion.baro["presion_Pa"]), linewidth=0.7, color=COLOR_SERIE)
+    ejes[2].ticklabel_format(useOffset=False, axis="y")
+    _aplicar_estilo(ejes[2], "Barómetro: presión", etiqueta_y="presión (Pa)")
+
+    ejes[3].plot(*_diezmar(t_baro, sesion.baro["temperatura_C"]), linewidth=0.7, color=COLOR_SERIE)
+    _aplicar_estilo(ejes[3], "Barómetro: temperatura", etiqueta_y="temperatura (°C)")
+
+    if hay_magnetometro:
+        _dibujar_tres_ejes(ejes[4], t_imu, sesion.imu, ["mx", "my", "mz"])
+        _aplicar_estilo(ejes[4], "Magnetómetro (sin calibrar)", etiqueta_y="campo (µT)")
+
+    # Marcas del botón: una línea vertical en cada panel.
+    for eje in ejes:
+        for t_evento in sesion.eventos["t_s"]:
+            eje.axvline(t_evento * factor, color=COLOR_REFERENCIA, linewidth=0.8, linestyle=":")
+    ejes[-1].set_xlabel(etiqueta_tiempo, fontsize=9, color=COLOR_TEXTO_SECUNDARIO)
+    figura.tight_layout()
+    return figura
