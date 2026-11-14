@@ -211,6 +211,56 @@ SIM_REPOSO_DURACION_S = 3600.0     # reposo largo: 1 hora
 SIM_CARA_DURACION_S = 60.0         # seis caras: tiempo quieto en cada cara
 SIM_GIRO_DURACION_S = 5.0          # seis caras: tiempo que toma girar de una cara a la siguiente
 
+# Ascensor SINTÉTICO (edificio inventado; NO son medidas de ningún edificio real).
+# Altura del piso de cada planta sobre la planta baja, en m. A propósito no son iguales.
+SIM_ASCENSOR_ALTURAS_PISOS_M = (0.0, 3.60, 6.45, 9.30, 12.25, 15.10)
+# Pisos que visita el ascensor, en orden (índices de la lista anterior): 21 recorridos.
+SIM_ASCENSOR_ITINERARIO = (0, 3, 5, 2, 4, 1, 0, 5, 3, 4, 0, 2, 5, 1, 3, 0, 4, 2, 5, 0, 1, 0)
+SIM_ASCENSOR_VELOCIDAD_MAX_MS = 1.5     # velocidad de crucero, en m/s  (TODO: medir en el real)
+SIM_ASCENSOR_DURACION_RAMPA_S = 3.0     # tiempo que tarda en arrancar o en frenar
+SIM_ASCENSOR_ESPERA_PUERTA_S = 2.0      # entre el cierre de puertas y el arranque (y entre la
+                                        # llegada y la apertura)
+SIM_ASCENSOR_PUERTA_ABIERTA_S = 8.0     # tiempo con las puertas abiertas en cada parada
+SIM_ASCENSOR_REPOSO_INICIAL_S = 30.0    # quieto antes del primer recorrido (para medir el sesgo)
+SIM_ASCENSOR_REPOSO_FINAL_S = 10.0
+SIM_ASCENSOR_ALABEO_GRADOS = 1.5        # el dispositivo no queda perfectamente nivelado
+SIM_ASCENSOR_CABECEO_GRADOS = -1.0
+
+# ---------------------------------------------------------------------------
+# Barómetro: altura a partir de la presión
+# ---------------------------------------------------------------------------
+# Fórmula barométrica (ver navinercial/barometro.py):  Δh = (R·T / (M·g)) · ln(P_ref / P)
+# Constante universal de los gases, en J/(mol·K). Fuente: CODATA 2018 (valor exacto del SI).
+R_GAS = 8.314462618
+# Masa molar del aire seco, en kg/mol. Fuente: U.S. Standard Atmosphere 1976 / ISO 2533.
+# TODO: citar fuente con página. El aire húmedo es un poco más liviano (efecto menor que 1 %).
+MASA_MOLAR_AIRE = 0.0289644
+CERO_CELSIUS_EN_KELVIN = 273.15         # 0 °C = 273,15 K (definición)
+
+# ---------------------------------------------------------------------------
+# Correcciones y fusión (ascensor y metro)
+# ---------------------------------------------------------------------------
+# Se descarta este tiempo al inicio y al final de cada parada marcada con el botón (la
+# persona no pulsa en el instante exacto). TODO: ajustar con datos reales.
+ZUPT_MARGEN_S = 0.5
+
+# Filtro complementario: constante de tiempo, en s. Para cambios más rápidos que esto manda
+# el acelerómetro; para cambios más lentos manda el barómetro.
+# TODO: ajustar con datos reales (compromiso entre ruido del barómetro y deriva inercial).
+COMPLEMENTARIO_TAU_S = 3.0
+
+# Filtro de Kalman: incertidumbres (desviaciones estándar) que se le dan al filtro.
+# Aceleración: mayor que el ruido blanco del sensor, para cubrir también el sesgo residual.
+KALMAN_ACCEL_STD_MS2 = 0.05
+# Altura barométrica: ruido de presión (≈1,3 Pa) dividido por 8,4 Pa/m ≈ 0,16 m, más margen.
+KALMAN_BARO_STD_M = 0.3
+# Medición "velocidad = 0" en las paradas (ZUPT), en m/s.
+KALMAN_ZUPT_STD_MS = 0.01
+# TODO: los tres valores salen del simulador; recalcular con la caracterización real.
+
+# Monte Carlo: cantidad de simulaciones con semillas distintas.
+MONTE_CARLO_CANTIDAD = 40
+
 # ---------------------------------------------------------------------------
 # Reproducibilidad y carpetas
 # ---------------------------------------------------------------------------

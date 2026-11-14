@@ -24,7 +24,7 @@ import numpy as np
 import pandas as pd
 
 import config
-from navinercial import bmp280, formato
+from navinercial import barometro, bmp280, formato
 from simulador import escenarios
 
 
@@ -227,7 +227,7 @@ def marea_barometrica(horas, parametros_barometro):
     return p.marea_amplitud_Pa * (np.cos(angulo) - np.cos(angulo_inicial))
 
 
-def simular_barometro(t_s, parametros, calib, rng):
+def simular_barometro(t_s, parametros, calib, rng, altura_m=None):
     """Tabla baro.csv (todas las muestras) y la presión y temperatura verdaderas.
 
     Presión verdadera = presión base + deriva lenta por el clima (tendencia lineal + marea
@@ -235,8 +235,9 @@ def simular_barometro(t_s, parametros, calib, rng):
     El sensor le suma ruido y entrega los valores crudos adc_T y adc_P, que se obtienen
     invirtiendo numéricamente la fórmula de compensación del BMP280 (ver bmp280.py).
 
-    Por ahora la presión no depende de la altura: en reposo y en seis caras el dispositivo
-    no cambia de altura. Eso se agrega con el escenario del ascensor.
+    altura_m: altura del dispositivo sobre el punto de partida en cada instante (None = 0).
+    Al subir, la presión baja según la fórmula barométrica (navinercial/barometro.py), con
+    la temperatura verdadera del aire.
 
     Devuelve (tabla baro, tabla verdad_baro).
     """
@@ -248,8 +249,11 @@ def simular_barometro(t_s, parametros, calib, rng):
     clima = (p.deriva_clima_Pa_por_hora * horas
              + marea_barometrica(horas, p)
              + paseo_aleatorio((n,), dt_s, p.paseo_clima_std, rng))
-    presion_real = p.presion_base_Pa + clima
     temperatura_real = p.temperatura_base_C + p.deriva_temperatura_C_por_hora * horas
+    if altura_m is None:
+        altura_m = np.zeros(n)
+    presion_real = barometro.presion_a_altura(
+        altura_m, p.presion_base_Pa, temperatura_real) + clima
 
     presion_medida = presion_real + rng.normal(0.0, p.ruido_presion_std_Pa, n)
     temperatura_medida = temperatura_real + rng.normal(0.0, p.ruido_temperatura_std_C, n)

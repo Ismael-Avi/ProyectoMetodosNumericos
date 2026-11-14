@@ -14,6 +14,8 @@ dispositivo real NO escribe, con la "verdad" de la simulación:
     verdad.csv              lo que mediría un sensor perfecto en cada muestra del IMU
     verdad_baro.csv         presión y temperatura verdaderas en cada muestra del barómetro
     verdad_parametros.json  sesgos, escalas, ruidos y semilla que usó el simulador
+    verdad_escenario.json   datos del escenario (pisos del ascensor, ruta del metro...); solo
+                            en los escenarios con movimiento
 """
 
 import argparse
@@ -33,12 +35,14 @@ from simulador import escenarios, modelo_sensor
 ARCHIVO_VERDAD = "verdad.csv"
 ARCHIVO_VERDAD_BARO = "verdad_baro.csv"
 ARCHIVO_VERDAD_PARAMETROS = "verdad_parametros.json"
+ARCHIVO_VERDAD_ESCENARIO = "verdad_escenario.json"
 
 # Fecha y hora FICTICIAS de cada sesión simulada. Son fijas para que la carpeta de cada
 # escenario se llame siempre igual y los scripts la encuentren.
 FECHAS_SIMULADAS = {
     "reposo": datetime(2026, 1, 1, 8, 0, 0),
     "seis_caras": datetime(2026, 1, 1, 10, 0, 0),
+    "ascensor": datetime(2026, 1, 1, 12, 0, 0),
 }
 
 
@@ -53,6 +57,7 @@ class SesionSimulada:
     verdad: pd.DataFrame
     verdad_baro: pd.DataFrame
     parametros: modelo_sensor.ParametrosSimulacion
+    info_escenario: dict = dataclasses.field(default_factory=dict)
 
 
 def simular_sesion(escenario, parametros=None):
@@ -80,8 +85,9 @@ def simular_sesion(escenario, parametros=None):
     # Barómetro (tiene su propio contador de muestras y su propia frecuencia).
     t_baro = modelo_sensor.generar_tiempos_s(
         escenario.duracion_s, tiempo.fs_baro_real_hz, tiempo.jitter_std_us, rng)
+    altura_baro = escenario.altura(t_baro) if escenario.altura is not None else None
     baro, verdad_baro = modelo_sensor.simular_barometro(
-        t_baro, parametros, meta["bmp280_calib"], rng)
+        t_baro, parametros, meta["bmp280_calib"], rng, altura_baro)
 
     # Muestras perdidas: se quitan las mismas filas de los datos y de la verdad.
     conservar_imu = modelo_sensor.mascara_muestras_conservadas(
@@ -97,6 +103,7 @@ def simular_sesion(escenario, parametros=None):
         verdad=verdad[conservar_imu].reset_index(drop=True),
         verdad_baro=verdad_baro[conservar_baro].reset_index(drop=True),
         parametros=parametros,
+        info_escenario=escenario.info,
     )
 
 
@@ -112,11 +119,14 @@ def guardar_sesion_simulada(carpeta, sesion):
     carpeta = Path(carpeta)
     formato.escribir_sesion(carpeta, sesion.meta, sesion.imu, sesion.baro, sesion.eventos)
 
-    # Seis cifras significativas bastan para la verdad y el archivo pesa mucho menos.
-    sesion.verdad.to_csv(carpeta / ARCHIVO_VERDAD, index=False, float_format="%.6g")
+    # Ocho cifras significativas: suficiente para la verdad, y el archivo pesa menos.
+    sesion.verdad.to_csv(carpeta / ARCHIVO_VERDAD, index=False, float_format="%.8g")
     sesion.verdad_baro.to_csv(carpeta / ARCHIVO_VERDAD_BARO, index=False, float_format="%.9g")
     with open(carpeta / ARCHIVO_VERDAD_PARAMETROS, "w", encoding="utf-8") as archivo:
         json.dump(dataclasses.asdict(sesion.parametros), archivo, indent=2)
+    if sesion.info_escenario:
+        with open(carpeta / ARCHIVO_VERDAD_ESCENARIO, "w", encoding="utf-8") as archivo:
+            json.dump(sesion.info_escenario, archivo, indent=2)
 
 
 def carpeta_de_escenario(nombre_escenario, carpeta_base=config.CARPETA_DATOS_SIMULADOS):
@@ -130,6 +140,8 @@ def _crear_escenario(nombre, argumentos):
         return escenarios.crear_reposo(duracion_s=argumentos.duracion_reposo_min * 60.0)
     if nombre == "seis_caras":
         return escenarios.crear_seis_caras()
+    if nombre == "ascensor":
+        return escenarios.crear_ascensor()
     raise ValueError(f"Escenario desconocido: {nombre}")
 
 
