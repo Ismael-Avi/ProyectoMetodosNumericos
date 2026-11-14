@@ -97,13 +97,26 @@ BMP280_CALIB_EJEMPLO = {
 # Acelerómetro (un valor por eje x, y, z).
 SIM_ACCEL_SESGO_MS2 = (0.15, -0.10, 0.25)        # sesgo constante, en m/s²
 SIM_ACCEL_ERROR_ESCALA = (0.010, -0.008, 0.015)  # error de escala (0.010 = mide 1 % de más)
-SIM_ACCEL_RUIDO_STD_MS2 = 0.03                   # desviación estándar del ruido blanco, en m/s²
+# Desviación estándar del ruido blanco, en m/s². Relación con la hoja de datos:
+#     σ ≈ densidad de ruido · √(ancho de banda)
+# Densidad de ruido del acelerómetro del MPU-9250: 300 µg/√Hz (valor típico).
+# Con un ancho de banda de 100 Hz: σ ≈ 300e-6 g · √100 = 0,003 g ≈ 0,029 m/s².
+# TODO: confirmar la densidad de ruido en la hoja de datos (tabla 6.2).
+# TODO: el ancho de banda depende del filtro pasabajos (DLPF) que configure el firmware;
+#       100 Hz es una suposición (la mitad de la frecuencia de muestreo de 200 Hz).
+SIM_ACCEL_RUIDO_STD_MS2 = 0.03
 SIM_ACCEL_DERIVA_STD = 2e-5                      # deriva del sesgo (paseo aleatorio), en (m/s²)/√s
 
 # Giroscopio (un valor por eje x, y, z). Se escriben en °/s y se pasan a rad/s.
 SIM_GYRO_SESGO_RADS = tuple(math.radians(v) for v in (0.5, -0.3, 0.2))   # rad/s
 SIM_GYRO_ERROR_ESCALA = (0.005, -0.004, 0.003)
-SIM_GYRO_RUIDO_STD_RADS = math.radians(0.1)      # rad/s
+# Desviación estándar del ruido blanco, en rad/s (se escribe en °/s). Misma relación:
+#     σ ≈ densidad de ruido · √(ancho de banda)
+# Densidad de ruido del giroscopio del MPU-9250: 0,01 (°/s)/√Hz (valor típico).
+# Con un ancho de banda de 100 Hz: σ ≈ 0,01 · √100 = 0,1 °/s.
+# TODO: confirmar la densidad de ruido en la hoja de datos (tabla 6.1) y el ancho de banda
+#       del filtro pasabajos (DLPF) que configure el firmware.
+SIM_GYRO_RUIDO_STD_RADS = math.radians(0.1)
 SIM_GYRO_DERIVA_STD = math.radians(1e-4)         # (rad/s)/√s
 
 # Magnetómetro.
@@ -111,16 +124,34 @@ SIM_GYRO_DERIVA_STD = math.radians(1e-4)         # (rad/s)/√s
 # SINTÉTICO. TODO: reemplazar por el campo real en Quito con su fuente (p. ej. modelo IGRF).
 SIM_MAG_CAMPO_MUNDO_UT = (0.0, 25.0, -10.0)
 SIM_MAG_SESGO_UT = (5.0, -3.0, 8.0)              # sesgo constante ("hierro duro"), en µT
-SIM_MAG_RUIDO_STD_UT = 0.5                       # µT
+# Ruido del magnetómetro, en µT. Aquí no se usa σ ≈ densidad · √(ancho de banda) porque no
+# tenemos un valor de densidad de ruido del AK8963: es un valor supuesto, de unos 3 LSB.
+# TODO: buscar el ruido de salida en la hoja de datos del AK8963 o medirlo en reposo.
+SIM_MAG_RUIDO_STD_UT = 0.5
 
 # Barómetro.
 # Presión y temperatura del ambiente. SINTÉTICOS (orden de magnitud para ~2850 m de altitud).
 # TODO: reemplazar por valores medidos en Quito.
 SIM_BARO_PRESION_BASE_PA = 72000.0
 SIM_BARO_TEMPERATURA_BASE_C = 20.0
-SIM_BARO_RUIDO_PRESION_STD_PA = 1.3              # ruido de la lectura de presión, en Pa
-SIM_BARO_RUIDO_TEMPERATURA_STD_C = 0.01          # ruido de la lectura de temperatura, en °C
+# Ruido de la lectura de presión, en Pa. La hoja de datos del BMP280 no da una densidad de
+# ruido sino el ruido RMS total para cada configuración de sobremuestreo y filtro: 1,3 Pa
+# corresponde a la resolución "ultra alta" (sobremuestreo x16) sin filtro IIR. Es el
+# equivalente a σ ≈ densidad · √(ancho de banda), ya calculado por el fabricante.
+# TODO: confirmar el valor en la hoja de datos (tabla de ruido de presión) y ajustarlo al
+#       sobremuestreo y al filtro IIR que configure el firmware.
+SIM_BARO_RUIDO_PRESION_STD_PA = 1.3
+# Ruido de la lectura de temperatura, en °C. Valor supuesto.
+# TODO: confirmar con la hoja de datos del BMP280 (ruido de temperatura) o medirlo en reposo.
+SIM_BARO_RUIDO_TEMPERATURA_STD_C = 0.01
 SIM_BARO_DERIVA_CLIMA_PA_POR_HORA = 30.0         # tendencia lenta de la presión por el clima
+# Marea barométrica semidiurna: la presión atmosférica sube y baja dos veces al día (período
+# de 12 h), y cerca del ecuador esa variación es grande. Se modela con una sinusoide.
+# SINTÉTICO: la amplitud es un orden de magnitud. TODO: citar fuente y medirla en Quito.
+SIM_BARO_MAREA_AMPLITUD_PA = 100.0               # amplitud de la sinusoide, en Pa (0 = sin marea)
+SIM_BARO_MAREA_PERIODO_H = 12.0                  # período, en horas
+SIM_BARO_MAREA_FASE_H = 0.0                      # horas transcurridas desde el último máximo
+                                                 # de presión al empezar el registro
 SIM_BARO_PASEO_CLIMA_STD = 0.05                  # parte aleatoria de esa deriva, en Pa/√s
 SIM_BARO_DERIVA_TEMPERATURA_C_POR_HORA = 0.5     # el dispositivo se calienta poco a poco
 

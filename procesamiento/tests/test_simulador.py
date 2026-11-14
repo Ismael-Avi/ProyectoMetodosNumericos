@@ -161,6 +161,37 @@ def test_barometro_simulado_recupera_la_presion_verdadera():
     assert abs(error_temperatura.mean()) < 0.002
 
 
+def test_marea_barometrica_es_una_sinusoide_de_doce_horas():
+    barometro = modelo_sensor.ParametrosBarometro(marea_amplitud_Pa=100.0, marea_fase_h=0.0)
+    horas = np.array([0.0, 3.0, 6.0, 12.0])
+
+    marea = modelo_sensor.marea_barometrica(horas, barometro)
+
+    # Empieza en el máximo: baja A en 3 h, baja 2A en 6 h y vuelve al inicio en 12 h.
+    assert marea == pytest.approx([0.0, -100.0, -200.0, 0.0], abs=1e-9)
+
+
+def test_marea_con_amplitud_cero_no_cambia_la_presion():
+    barometro = modelo_sensor.ParametrosBarometro(marea_amplitud_Pa=0.0)
+
+    assert np.all(modelo_sensor.marea_barometrica(np.linspace(0, 24, 50), barometro) == 0.0)
+
+
+def test_la_presion_verdadera_incluye_la_marea():
+    """Sin tendencia ni paseo aleatorio, la presión verdadera es la base más la marea."""
+    parametros = modelo_sensor.ParametrosSimulacion()
+    parametros.barometro.deriva_clima_Pa_por_hora = 0.0
+    parametros.barometro.paseo_clima_std = 0.0
+    parametros.barometro.marea_amplitud_Pa = 100.0
+    t_s = np.array([0.0, 6 * 3600.0])
+
+    _, verdad_baro = modelo_sensor.simular_barometro(
+        t_s, parametros, config.BMP280_CALIB_EJEMPLO, np.random.default_rng(0))
+
+    base = config.SIM_BARO_PRESION_BASE_PA
+    assert list(verdad_baro["presion_Pa"]) == pytest.approx([base, base - 200.0])
+
+
 def test_la_misma_semilla_da_los_mismos_datos_y_otra_semilla_no():
     escenario = escenarios.crear_reposo(duracion_s=5.0)
 

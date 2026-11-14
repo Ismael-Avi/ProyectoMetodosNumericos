@@ -55,6 +55,9 @@ class ParametrosBarometro:
     deriva_clima_Pa_por_hora: float = config.SIM_BARO_DERIVA_CLIMA_PA_POR_HORA
     paseo_clima_std: float = config.SIM_BARO_PASEO_CLIMA_STD            # Pa/√s
     deriva_temperatura_C_por_hora: float = config.SIM_BARO_DERIVA_TEMPERATURA_C_POR_HORA
+    marea_amplitud_Pa: float = config.SIM_BARO_MAREA_AMPLITUD_PA        # 0 = sin marea
+    marea_periodo_h: float = config.SIM_BARO_MAREA_PERIODO_H
+    marea_fase_h: float = config.SIM_BARO_MAREA_FASE_H
 
 
 @dataclass
@@ -207,10 +210,28 @@ def simular_imu(t_s, estado, parametros, rng):
     return imu
 
 
+def marea_barometrica(horas, parametros_barometro):
+    """Cambio de presión por la marea barométrica semidiurna, en Pa.
+
+    marea(t) = A · [cos(2π · (t + fase) / T) − cos(2π · fase / T)]
+
+    A: amplitud en Pa; T: período (12 h); fase: horas transcurridas desde el último máximo
+    de presión cuando empieza el registro. Se resta el valor inicial para que la marea valga
+    cero en t = 0, es decir, para que la presión base sea la presión al empezar el registro.
+
+    horas: tiempo desde el inicio del registro, en horas (número o arreglo).
+    """
+    p = parametros_barometro
+    angulo = 2 * np.pi * (horas + p.marea_fase_h) / p.marea_periodo_h
+    angulo_inicial = 2 * np.pi * p.marea_fase_h / p.marea_periodo_h
+    return p.marea_amplitud_Pa * (np.cos(angulo) - np.cos(angulo_inicial))
+
+
 def simular_barometro(t_s, parametros, calib, rng):
     """Tabla baro.csv (todas las muestras) y la presión y temperatura verdaderas.
 
-    Presión verdadera = presión base + deriva lenta por el clima (tendencia + paseo aleatorio).
+    Presión verdadera = presión base + deriva lenta por el clima (tendencia lineal + marea
+    barométrica + paseo aleatorio).
     El sensor le suma ruido y entrega los valores crudos adc_T y adc_P, que se obtienen
     invirtiendo numéricamente la fórmula de compensación del BMP280 (ver bmp280.py).
 
@@ -224,7 +245,9 @@ def simular_barometro(t_s, parametros, calib, rng):
     horas = t_s / 3600.0
     dt_s = 1.0 / config.FS_BARO_NOMINAL_HZ
 
-    clima = p.deriva_clima_Pa_por_hora * horas + paseo_aleatorio((n,), dt_s, p.paseo_clima_std, rng)
+    clima = (p.deriva_clima_Pa_por_hora * horas
+             + marea_barometrica(horas, p)
+             + paseo_aleatorio((n,), dt_s, p.paseo_clima_std, rng))
     presion_real = p.presion_base_Pa + clima
     temperatura_real = p.temperatura_base_C + p.deriva_temperatura_C_por_hora * horas
 
