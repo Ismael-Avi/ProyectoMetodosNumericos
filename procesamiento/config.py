@@ -71,6 +71,19 @@ ACCEL_RANGO_G = 4         # rango del acelerómetro: ±4 g
 GYRO_RANGO_DPS = 500      # rango del giroscopio: ±500 °/s
 
 # ---------------------------------------------------------------------------
+# Verificación de una sesión
+# ---------------------------------------------------------------------------
+
+# Requisitos del dispositivo según el enunciado del proyecto.
+REQUISITO_FS_MINIMA_HZ = 100.0      # muestreo de 100 Hz o más
+REQUISITO_DURACION_MIN = 90.0       # 90 minutos de registro continuo sin perder muestras
+
+# Duración de la ventana con la que se mide la frecuencia de muestreo real al inicio y al
+# final del registro, en segundos. Con una ventana más larga la medida es más precisa, pero
+# deja de ser "al inicio" o "al final".
+VERIF_VENTANA_FRECUENCIA_S = 60.0
+
+# ---------------------------------------------------------------------------
 # Barómetro BMP280
 # ---------------------------------------------------------------------------
 
