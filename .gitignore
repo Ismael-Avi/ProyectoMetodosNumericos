@@ -13,3 +13,4 @@ procesamiento/resultados/*
 
 # Editor
 .vscode/
+.pio/
