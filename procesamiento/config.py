@@ -6,6 +6,7 @@ vive aquí, con su fuente o con un "TODO: citar fuente".
 Unidades: Sistema Internacional (m, s, kg, Pa, rad), salvo donde se indique lo contrario.
 """
 
+import math
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
@@ -44,9 +45,21 @@ GYRO_LSB_POR_DPS = {250: 131.0, 500: 65.5, 1000: 32.8, 2000: 16.4}
 MAG_UT_POR_LSB = 0.15
 
 # Valor del registro WHO_AM_I de cada chip (sirve para saber si hay magnetómetro).
-# Fuente: mapas de registros de InvenSense del MPU-9250 y del MPU-6500.
+# Fuente: mapas de registros de InvenSense del MPU-9250, del MPU-9255 y del MPU-6500.
 WHOAMI_MPU9250 = "0x71"  # con magnetómetro AK8963
+WHOAMI_MPU9255 = "0x73"  # con magnetómetro AK8963
 WHOAMI_MPU6500 = "0x70"  # sin magnetómetro
+
+# Chips aceptados en meta.json: valor de WHO_AM_I -> ¿tiene magnetómetro?
+WHOAMI_TIENE_MAGNETOMETRO = {
+    WHOAMI_MPU9250: True,
+    WHOAMI_MPU9255: True,
+    WHOAMI_MPU6500: False,
+}
+
+# Frecuencia del magnetómetro AK8963 en modo de medición continua 2, en Hz.
+# Fuente: AKM, hoja de datos del AK8963 (Continuous measurement mode 2: 100 Hz).
+FS_MAG_NOMINAL_HZ = 100
 
 # ---------------------------------------------------------------------------
 # Configuración nominal del dispositivo (propuesta, hasta que exista el firmware)
@@ -74,6 +87,56 @@ BMP280_CALIB_EJEMPLO = {
 }
 
 # ---------------------------------------------------------------------------
+# Parámetros por defecto del SIMULADOR (valores SINTÉTICOS)
+# ---------------------------------------------------------------------------
+# Estos números NO son mediciones de nuestro dispositivo. Son valores razonables, del orden
+# de los "típicos" de las hojas de datos, para que el simulador se parezca a un sensor real.
+# Cuando exista el dispositivo se reemplazan por los valores medidos en la caracterización.
+# TODO: comparar con los valores típicos de las hojas de datos y con los medidos.
+
+# Acelerómetro (un valor por eje x, y, z).
+SIM_ACCEL_SESGO_MS2 = (0.15, -0.10, 0.25)        # sesgo constante, en m/s²
+SIM_ACCEL_ERROR_ESCALA = (0.010, -0.008, 0.015)  # error de escala (0.010 = mide 1 % de más)
+SIM_ACCEL_RUIDO_STD_MS2 = 0.03                   # desviación estándar del ruido blanco, en m/s²
+SIM_ACCEL_DERIVA_STD = 2e-5                      # deriva del sesgo (paseo aleatorio), en (m/s²)/√s
+
+# Giroscopio (un valor por eje x, y, z). Se escriben en °/s y se pasan a rad/s.
+SIM_GYRO_SESGO_RADS = tuple(math.radians(v) for v in (0.5, -0.3, 0.2))   # rad/s
+SIM_GYRO_ERROR_ESCALA = (0.005, -0.004, 0.003)
+SIM_GYRO_RUIDO_STD_RADS = math.radians(0.1)      # rad/s
+SIM_GYRO_DERIVA_STD = math.radians(1e-4)         # (rad/s)/√s
+
+# Magnetómetro.
+# Campo magnético terrestre en ejes del mundo (x = este, y = norte, z = arriba), en µT.
+# SINTÉTICO. TODO: reemplazar por el campo real en Quito con su fuente (p. ej. modelo IGRF).
+SIM_MAG_CAMPO_MUNDO_UT = (0.0, 25.0, -10.0)
+SIM_MAG_SESGO_UT = (5.0, -3.0, 8.0)              # sesgo constante ("hierro duro"), en µT
+SIM_MAG_RUIDO_STD_UT = 0.5                       # µT
+
+# Barómetro.
+# Presión y temperatura del ambiente. SINTÉTICOS (orden de magnitud para ~2850 m de altitud).
+# TODO: reemplazar por valores medidos en Quito.
+SIM_BARO_PRESION_BASE_PA = 72000.0
+SIM_BARO_TEMPERATURA_BASE_C = 20.0
+SIM_BARO_RUIDO_PRESION_STD_PA = 1.3              # ruido de la lectura de presión, en Pa
+SIM_BARO_RUIDO_TEMPERATURA_STD_C = 0.01          # ruido de la lectura de temperatura, en °C
+SIM_BARO_DERIVA_CLIMA_PA_POR_HORA = 30.0         # tendencia lenta de la presión por el clima
+SIM_BARO_PASEO_CLIMA_STD = 0.05                  # parte aleatoria de esa deriva, en Pa/√s
+SIM_BARO_DERIVA_TEMPERATURA_C_POR_HORA = 0.5     # el dispositivo se calienta poco a poco
+
+# Tiempo.
+SIM_T_INICIAL_US = 2_000_000       # el registro empieza 2 s después de encender el ESP32
+SIM_JITTER_STD_US = 50.0           # desviación estándar del jitter del muestreo, en µs
+SIM_PROB_MUESTRA_PERDIDA = 2e-5    # probabilidad de perder cada muestra (≈ 14 por hora a 200 Hz)
+SIM_FS_IMU_REAL_HZ = 199.96        # frecuencia REAL del simulador: a propósito no es la nominal,
+SIM_FS_BARO_REAL_HZ = 24.995       # para comprobar que la verificación mide la frecuencia real
+
+# Escenarios.
+SIM_REPOSO_DURACION_S = 3600.0     # reposo largo: 1 hora
+SIM_CARA_DURACION_S = 60.0         # seis caras: tiempo quieto en cada cara
+SIM_GIRO_DURACION_S = 5.0          # seis caras: tiempo que toma girar de una cara a la siguiente
+
+# ---------------------------------------------------------------------------
 # Reproducibilidad y carpetas
 # ---------------------------------------------------------------------------
 
@@ -83,5 +146,6 @@ SEMILLA_POR_DEFECTO = 12345
 
 CARPETA_BASE = Path(__file__).resolve().parent           # carpeta procesamiento/
 CARPETA_DATOS = CARPETA_BASE / "datos"                   # sesiones (simuladas o reales)
+CARPETA_DATOS_SIMULADOS = CARPETA_DATOS / "simulados"    # sesiones que genera el simulador
 CARPETA_RESULTADOS = CARPETA_BASE / "resultados"         # figuras y reportes
 CARPETA_REFERENCIA = CARPETA_BASE / "datos_referencia"   # datos externos (estaciones, pisos)

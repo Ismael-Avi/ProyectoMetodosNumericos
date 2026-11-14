@@ -100,6 +100,32 @@ def test_version_de_formato_desconocida_da_error(tmp_path):
         formato.leer_sesion_cruda(tmp_path)
 
 
+@pytest.mark.parametrize("whoami, tiene_magnetometro", [
+    ("0x71", True), ("0x73", True), ("0x70", False),
+])
+def test_chips_conocidos_son_validos(whoami, tiene_magnetometro):
+    meta = formato.crear_meta(tiene_magnetometro=tiene_magnetometro)
+    meta["chip_whoami"] = whoami
+
+    formato.validar_meta(meta)   # no debe lanzar error
+
+
+def test_chip_desconocido_da_error():
+    meta = formato.crear_meta()
+    meta["chip_whoami"] = "0x68"
+
+    with pytest.raises(formato.ErrorDeFormato, match="0x68"):
+        formato.validar_meta(meta)
+
+
+def test_chip_sin_magnetometro_que_dice_tenerlo_da_error():
+    meta = formato.crear_meta(tiene_magnetometro=False)
+    meta["tiene_magnetometro"] = True
+
+    with pytest.raises(formato.ErrorDeFormato, match="tiene_magnetometro"):
+        formato.validar_meta(meta)
+
+
 def test_valor_fuera_de_int16_da_error(tmp_path):
     imu, baro, eventos = _tablas_de_ejemplo()
     imu.loc[0, "ax"] = 40000

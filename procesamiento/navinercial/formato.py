@@ -127,6 +127,17 @@ def validar_meta(meta):
             f"(este programa lee la versión {VERSION_FORMATO})"
         )
 
+    whoami = str(meta["chip_whoami"]).lower()
+    if whoami not in config.WHOAMI_TIENE_MAGNETOMETRO:
+        raise ErrorDeFormato(
+            f"chip_whoami = {meta['chip_whoami']} no es un chip conocido "
+            f"(se aceptan {list(config.WHOAMI_TIENE_MAGNETOMETRO)})"
+        )
+    if meta["tiene_magnetometro"] != config.WHOAMI_TIENE_MAGNETOMETRO[whoami]:
+        raise ErrorDeFormato(
+            f"tiene_magnetometro = {meta['tiene_magnetometro']} no coincide con el chip {whoami}"
+        )
+
     faltantes = [c for c in CAMPOS_BMP280_CALIB if c not in meta["bmp280_calib"]]
     if faltantes:
         raise ErrorDeFormato(f"A bmp280_calib le faltan los coeficientes: {faltantes}")
