@@ -25,6 +25,28 @@ Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 
 Otra opción es usar el Símbolo del sistema (cmd) y activar con `.venv\Scripts\activate.bat`.
 
+## Generar sesiones simuladas
+
+Con el entorno activado, desde la carpeta `procesamiento/`:
+
+```powershell
+python -m simulador.generar                          # todos los escenarios (tarda unos 25 s)
+python -m simulador.generar --escenario seis_caras   # solo uno
+python -m simulador.generar --escenario reposo --duracion-reposo-min 10
+python -m simulador.generar --sin-magnetometro       # simula un MPU-6500
+```
+
+Las sesiones quedan en `datos/simulados/` (esa carpeta no se sube a git; cada uno la genera):
+
+| Escenario | Carpeta |
+|---|---|
+| Reposo largo (1 hora) | `datos/simulados/sesion_20260101_080000` |
+| Seis caras | `datos/simulados/sesion_20260101_100000` |
+
+Las fechas de las carpetas simuladas son ficticias. Además de los cuatro archivos del dispositivo,
+el simulador guarda `verdad.csv`, `verdad_baro.csv` y `verdad_parametros.json`, que el dispositivo
+real no escribe: sirven para medir el error de cada etapa del procesamiento.
+
 ## Formato de los archivos
 
 El formato de una sesión está definido en un solo lugar: `navinercial/formato.py`. Si el firmware
