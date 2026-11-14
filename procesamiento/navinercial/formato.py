@@ -1,12 +1,20 @@
 """Definición única del formato de archivos de una sesión (PROPUESTA v0).
 
-El firmware todavía no existe, así que este formato es una propuesta. El simulador escribe
-con este módulo y el lector lee con este módulo: si el firmware real cambia algo (una
-columna, un nombre de archivo), solo hay que modificar este archivo.
+El firmware (carpeta firmware/) escribe este mismo formato, pero todavía no se ha probado con
+el dispositivo armado. El simulador escribe con este módulo y el lector lee con este módulo:
+si algo cambia (una columna, un nombre de archivo), solo hay que modificar este archivo y el
+firmware.
 
-Una sesión es una carpeta:
+Una sesión es una carpeta. Se aceptan dos formas de nombre:
 
-    sesion_YYYYMMDD_HHMMSS/
+    sesion_YYYYMMDD_HHMMSS/   la usa el simulador (fecha y hora de inicio)
+    sesion_NNN/               la usa el firmware: el ESP32 no tiene reloj, así que numera
+                              las carpetas (sesion_001, sesion_002...). La fecha real se
+                              anota en la bitácora.
+
+Contenido:
+
+    sesion_.../
     ├── meta.json      configuración del sensor y coeficientes del BMP280
     ├── imu.csv        seq,t_us,ax,ay,az,gx,gy,gz,mx,my,mz   (crudos, int16)
     ├── baro.csv       seq,t_us,adc_T,adc_P                  (crudos, 20 bits)
@@ -24,6 +32,13 @@ DECISIÓN sobre el magnetómetro: muestrea más lento que el acelerómetro. En l
 no hay una lectura nueva, mx, my y mz quedan VACÍOS (no se repite la última lectura). Así se
 distingue una lectura nueva de una repetida. Si el chip no tiene magnetómetro (MPU-6500),
 las tres columnas quedan vacías en todo el archivo.
+
+meta.json puede traer campos EXTRA además de los obligatorios (CAMPOS_META). El firmware
+agrega tres (CAMPOS_META_OPCIONALES):
+- ak8963_asa: [asa_x, asa_y, asa_z], ajuste de sensibilidad de fábrica del magnetómetro, en
+              el orden de las columnas mx, my, mz. lectura.py lo aplica si está presente.
+- mpu_dlpf_cfg: configuración del filtro paso bajo interno del MPU (solo informativo).
+- bmp280_direccion: dirección I2C en la que respondió el barómetro (solo informativo).
 
 Este módulo solo trabaja con valores CRUDOS. La conversión a unidades físicas se hace en
 lectura.py.
@@ -51,6 +66,8 @@ ARCHIVO_EVENTOS = "eventos.csv"
 
 PREFIJO_SESION = "sesion_"
 FORMATO_FECHA_SESION = "%Y%m%d_%H%M%S"   # YYYYMMDD_HHMMSS
+DIGITOS_NUMERO_SESION = 3                # sesion_NNN (igual que en el firmware)
+NUMERO_MAXIMO_DE_SESION = 999
 
 COLUMNAS_MAG = ["mx", "my", "mz"]
 COLUMNAS_IMU = ["seq", "t_us", "ax", "ay", "az", "gx", "gy", "gz"] + COLUMNAS_MAG
@@ -73,6 +90,7 @@ CAMPOS_META = [
     "fs_imu_nominal_hz", "fs_baro_nominal_hz", "accel_rango_g", "gyro_rango_dps",
     "bmp280_calib", "notas",
 ]
+CAMPOS_META_OPCIONALES = ["ak8963_asa", "mpu_dlpf_cfg", "bmp280_direccion"]
 CAMPOS_BMP280_CALIB = [
     "dig_T1", "dig_T2", "dig_T3",
     "dig_P1", "dig_P2", "dig_P3", "dig_P4", "dig_P5", "dig_P6", "dig_P7", "dig_P8", "dig_P9",
@@ -133,9 +151,11 @@ def validar_meta(meta):
             f"chip_whoami = {meta['chip_whoami']} no es un chip conocido "
             f"(se aceptan {list(config.WHOAMI_TIENE_MAGNETOMETRO)})"
         )
-    if meta["tiene_magnetometro"] != config.WHOAMI_TIENE_MAGNETOMETRO[whoami]:
+    # Un chip sin magnetómetro no puede decir que tiene uno. Lo contrario sí se acepta: el
+    # firmware pone tiene_magnetometro = false si el AK8963 de un MPU-9250 no respondió.
+    if meta["tiene_magnetometro"] and not config.WHOAMI_TIENE_MAGNETOMETRO[whoami]:
         raise ErrorDeFormato(
-            f"tiene_magnetometro = {meta['tiene_magnetometro']} no coincide con el chip {whoami}"
+            f"tiene_magnetometro = true no es posible con el chip {whoami} (MPU-6500)"
         )
 
     faltantes = [c for c in CAMPOS_BMP280_CALIB if c not in meta["bmp280_calib"]]
@@ -221,6 +241,34 @@ def fecha_de_carpeta_sesion(nombre_carpeta):
         return datetime.strptime(texto_fecha, FORMATO_FECHA_SESION)
     except ValueError:
         raise ErrorDeFormato(f"'{nombre_carpeta}' no tiene la forma sesion_YYYYMMDD_HHMMSS")
+
+
+def nombre_carpeta_numerada(numero):
+    """Nombre de carpeta que usa el firmware: sesion_001, sesion_002... (numero de 1 a 999)."""
+    if not 1 <= numero <= NUMERO_MAXIMO_DE_SESION:
+        raise ErrorDeFormato(f"El número de sesión debe estar entre 1 y {NUMERO_MAXIMO_DE_SESION}")
+    return f"{PREFIJO_SESION}{numero:03d}"
+
+
+def numero_de_carpeta_sesion(nombre_carpeta):
+    """Operación inversa de nombre_carpeta_numerada: 'sesion_007' -> 7."""
+    texto = nombre_carpeta[len(PREFIJO_SESION):]
+    es_numerada = (nombre_carpeta.startswith(PREFIJO_SESION)
+                   and len(texto) == DIGITOS_NUMERO_SESION and texto.isdigit())
+    if not es_numerada:
+        raise ErrorDeFormato(f"'{nombre_carpeta}' no tiene la forma sesion_NNN")
+    return int(texto)
+
+
+def es_carpeta_de_sesion(nombre_carpeta):
+    """True si el nombre tiene alguna de las dos formas aceptadas (con fecha o numerada)."""
+    for interpretar in (fecha_de_carpeta_sesion, numero_de_carpeta_sesion):
+        try:
+            interpretar(nombre_carpeta)
+            return True
+        except ErrorDeFormato:
+            pass
+    return False
 
 
 def escribir_sesion(carpeta, meta, imu, baro, eventos):

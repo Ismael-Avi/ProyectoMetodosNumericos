@@ -43,6 +43,10 @@ GYRO_LSB_POR_DPS = {250: 131.0, 500: 65.5, 1000: 32.8, 2000: 16.4}
 # Resolución del magnetómetro AK8963 en modo de 16 bits, en µT por LSB.
 # Fuente: AKM, hoja de datos del AK8963 (rango ±4912 µT en 16 bits; aprox. 0,15 µT/LSB).
 MAG_UT_POR_LSB = 0.15
+# Ajuste de sensibilidad de fábrica del AK8963: H_ajustado = H·((ASA − 128)/256 + 1).
+# Fuente: hoja de datos del AK8963, registros ASAX/ASAY/ASAZ. TODO: confirmar la sección.
+AK8963_ASA_CENTRO = 128
+AK8963_ASA_DIVISOR = 256
 
 # Valor del registro WHO_AM_I de cada chip (sirve para saber si hay magnetómetro).
 # Fuente: mapas de registros de InvenSense del MPU-9250, del MPU-9255 y del MPU-6500.
@@ -139,8 +143,10 @@ SIM_ACCEL_ERROR_ESCALA = (0.010, -0.008, 0.015)  # error de escala (0.010 = mide
 # Densidad de ruido del acelerómetro del MPU-9250: 300 µg/√Hz (valor típico).
 # Con un ancho de banda de 100 Hz: σ ≈ 300e-6 g · √100 = 0,003 g ≈ 0,029 m/s².
 # TODO: confirmar la densidad de ruido en la hoja de datos (tabla 6.2).
-# TODO: el ancho de banda depende del filtro pasabajos (DLPF) que configure el firmware;
-#       100 Hz es una suposición (la mitad de la frecuencia de muestreo de 200 Hz).
+# OJO: el firmware configura el filtro pasabajos interno (DLPF) en 41 Hz, no en 100 Hz. Con
+# 41 Hz la fórmula da σ ≈ 300e-6 g · √41 ≈ 0,0019 g ≈ 0,019 m/s². Se deja 0,03 (más ruido
+# que el esperado) para que la simulación sea pesimista.
+# TODO: medir el ruido real en reposo con scripts/caracterizar_reposo.py y poner aquí ese valor.
 SIM_ACCEL_RUIDO_STD_MS2 = 0.03
 SIM_ACCEL_DERIVA_STD = 2e-5                      # deriva del sesgo (paseo aleatorio), en (m/s²)/√s
 
@@ -151,8 +157,9 @@ SIM_GYRO_ERROR_ESCALA = (0.005, -0.004, 0.003)
 #     σ ≈ densidad de ruido · √(ancho de banda)
 # Densidad de ruido del giroscopio del MPU-9250: 0,01 (°/s)/√Hz (valor típico).
 # Con un ancho de banda de 100 Hz: σ ≈ 0,01 · √100 = 0,1 °/s.
-# TODO: confirmar la densidad de ruido en la hoja de datos (tabla 6.1) y el ancho de banda
-#       del filtro pasabajos (DLPF) que configure el firmware.
+# Con el filtro de 41 Hz que configura el firmware: σ ≈ 0,01 · √41 ≈ 0,064 °/s. Se deja 0,1
+# (simulación pesimista).
+# TODO: confirmar la densidad de ruido en la hoja de datos (tabla 6.1) y medir el ruido real.
 SIM_GYRO_RUIDO_STD_RADS = math.radians(0.1)
 SIM_GYRO_DERIVA_STD = math.radians(1e-4)         # (rad/s)/√s
 

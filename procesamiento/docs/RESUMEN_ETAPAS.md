@@ -116,3 +116,52 @@ grupo. Los comandos se corren desde la carpeta `procesamiento/` con el entorno v
 - En reposo, la media de `ax`, `ay`, `az` NO es el sesgo: incluye la gravedad y la inclinación de la
   mesa. El sesgo del acelerómetro solo sale de las seis caras.
 - Una mesa inclinada casi no cambia el sesgo calculado, pero sí reduce la escala en cos(inclinación).
+
+---
+
+## Firmware del ESP32 (carpeta `firmware/`)
+
+**Qué se hizo**
+- Proyecto de PlatformIO (framework Arduino) con dos entornos: `registro` (graba en la microSD) y
+  `prueba` (imprime lecturas convertidas por el monitor serie, sin SD).
+- `include/configuracion.h`: pines, direcciones, frecuencias, buffers. Todo lo ajustable está ahí.
+- `src/sensores.*`: lectura cruda del MPU, del AK8963 y del BMP280 con `Wire`, sin librerías
+  externas de sensores.
+- `src/almacenamiento.*`: microSD, carpetas `sesion_NNN`, `meta.json` y doble buffer.
+- `src/main.cpp`: temporizador de 200 Hz, tarea de muestreo, tarea de escritura, botón con
+  interrupción y antirrebote, LED de estado.
+- `firmware/README.md`: instalación en Windows, compilar, cargar, parpadeos del LED y cómo grabar.
+- En Python: `formato.py` acepta también carpetas `sesion_NNN`; `lectura.py` aplica el ajuste de
+  sensibilidad del magnetómetro (`ak8963_asa`) si viene en `meta.json`.
+
+**Estado**
+- Los dos entornos **compilan** sin errores ni avisos (PlatformIO, placa `esp32dev`).
+- **No se ha ejecutado en ningún ESP32.** Nada del firmware está probado con hardware.
+
+**Decisiones**
+- Sin librerías de sensores: cada registro que se escribe o se lee está a la vista y se puede
+  explicar con la hoja de datos.
+- `seq` cuenta los avisos del temporizador, no las filas escritas. Si una muestra se pierde, queda
+  un salto en `seq` y `verificar_sesion` lo informa.
+- `t_us` se toma con `esp_timer_get_time()` justo antes de leer el sensor.
+- Filtro paso bajo interno del MPU: `DLPF_CFG = 3` (≈41 Hz), por debajo de la mitad de la
+  frecuencia de muestreo. El simulador sigue usando un ruido algo mayor (pesimista); está explicado
+  en `config.py`.
+- Barómetro a 25 Hz = una lectura cada 8 muestras del IMU; magnetómetro cada 2 (100 Hz).
+- Ejes del magnetómetro reordenados en el firmware a los ejes del acelerómetro (`mx = hy`,
+  `my = hx`, `mz = −hz`). El valor sigue siendo crudo.
+- Botón: pulsación corta = evento (con el instante en que se pulsó); mantener 3 s = cerrar archivos.
+  Encender = empezar a grabar, sin pasos extra.
+- `flush` cada 2 s: un corte de energía pierde como máximo 2 s.
+- Carpetas `sesion_001`, `sesion_002`...: la fecha real se anota en la bitácora.
+- `validar_meta` ahora acepta un chip con magnetómetro que diga `tiene_magnetometro: false` (el
+  firmware lo pone si el AK8963 no responde). Lo contrario sigue siendo error.
+- `meta.json` lleva tres campos extra: `ak8963_asa`, `mpu_dlpf_cfg`, `bmp280_direccion`.
+
+**Qué revisar**
+- Todos los `TODO` de `configuracion.h` y `sensores.cpp` (direcciones de registros, anchos de banda
+  del filtro, tiempo de medición del BMP280).
+- La versión de la plataforma `espressif32` no está fijada en `platformio.ini`: si otra computadora
+  descarga una versión distinta y no compila, fijarla con `platform = espressif32@<versión>`.
+- La opción de Arduino IDE del README no se ha probado.
+- Lista completa de comprobaciones con hardware: `docs/PENDIENTES_HARDWARE.md`.

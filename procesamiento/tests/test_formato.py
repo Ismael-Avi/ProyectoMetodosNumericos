@@ -163,3 +163,44 @@ def test_nombre_de_carpeta_ida_y_vuelta():
 def test_nombre_de_carpeta_invalido_da_error():
     with pytest.raises(formato.ErrorDeFormato):
         formato.fecha_de_carpeta_sesion("viaje_metro_1")
+
+
+def test_chip_con_magnetometro_que_no_respondio_es_valido():
+    # El firmware pone tiene_magnetometro = false si el AK8963 de un MPU-9250 no responde.
+    meta = formato.crear_meta(tiene_magnetometro=True)
+    meta["tiene_magnetometro"] = False
+
+    formato.validar_meta(meta)   # no debe lanzar error
+
+
+def test_nombre_de_carpeta_numerada_ida_y_vuelta():
+    assert formato.nombre_carpeta_numerada(7) == "sesion_007"
+    assert formato.numero_de_carpeta_sesion("sesion_007") == 7
+    assert formato.numero_de_carpeta_sesion("sesion_999") == 999
+
+
+@pytest.mark.parametrize("nombre", ["sesion_7", "sesion_0007", "sesion_abc", "otra_007"])
+def test_nombre_numerado_mal_formado_da_error(nombre):
+    with pytest.raises(formato.ErrorDeFormato):
+        formato.numero_de_carpeta_sesion(nombre)
+
+
+@pytest.mark.parametrize("nombre, esperado", [
+    ("sesion_001", True), ("sesion_20260101_080000", True),
+    ("sesion_1", False), ("datos", False),
+])
+def test_es_carpeta_de_sesion_acepta_las_dos_formas(nombre, esperado):
+    assert formato.es_carpeta_de_sesion(nombre) == esperado
+
+
+def test_meta_del_firmware_con_campos_extra_se_lee(tmp_path):
+    # meta.json como lo escribe el firmware: whoami en texto y tres campos extra.
+    imu, baro, eventos = _tablas_de_ejemplo()
+    meta = formato.crear_meta()
+    meta.update({"ak8963_asa": [176, 178, 165], "mpu_dlpf_cfg": 3, "bmp280_direccion": "0x76"})
+    carpeta = tmp_path / formato.nombre_carpeta_numerada(1)
+    formato.escribir_sesion(carpeta, meta, imu, baro, eventos)
+
+    cruda = formato.leer_sesion_cruda(carpeta)
+
+    assert cruda.meta["ak8963_asa"] == [176, 178, 165]

@@ -69,9 +69,24 @@ def gyro_crudo_a_rads(crudo, rango_dps):
     return np.radians(crudo / lsb_por_dps)
 
 
-def mag_crudo_a_uT(crudo):
-    """Magnetómetro: de LSB a µT (0,15 µT por LSB en modo de 16 bits)."""
-    return crudo * config.MAG_UT_POR_LSB
+def mag_crudo_a_uT(crudo, asa=None):
+    """Magnetómetro: de LSB a µT (0,15 µT por LSB en modo de 16 bits).
+
+    asa: ajuste de sensibilidad de fábrica del AK8963 para ese eje (entero de 0 a 255), o
+    None si no se conoce. Según la hoja de datos, la lectura se corrige así:
+
+        H_ajustado = H · ((asa − 128) / 256 + 1)
+
+    Con asa = 128 el factor vale 1 (sin corrección). TODO: confirmar la fórmula en la hoja
+    de datos del AK8963 (sección del registro ASAX).
+    """
+    factor = 1.0 if asa is None else factor_ajuste_ak8963(asa)
+    return crudo * config.MAG_UT_POR_LSB * factor
+
+
+def factor_ajuste_ak8963(asa):
+    """Factor de corrección de sensibilidad del AK8963: (asa − 128)/256 + 1. Sin unidades."""
+    return (asa - config.AK8963_ASA_CENTRO) / config.AK8963_ASA_DIVISOR + 1.0
 
 
 def us_a_segundos(t_us, t0_us):
@@ -94,10 +109,13 @@ def _convertir_imu(cruda, t0_us):
         imu[columna] = accel_crudo_a_ms2(cruda.imu[columna].astype(float), meta["accel_rango_g"])
     for columna in COLUMNAS_GYRO:
         imu[columna] = gyro_crudo_a_rads(cruda.imu[columna].astype(float), meta["gyro_rango_dps"])
-    for columna in COLUMNAS_MAG:
+    # Ajuste de sensibilidad del magnetómetro: el firmware lo guarda en meta.json; el
+    # simulador no (entonces no se corrige nada).
+    ajustes = meta.get("ak8963_asa") or [None, None, None]
+    for columna, asa in zip(COLUMNAS_MAG, ajustes):
         # Las celdas vacías (<NA>) pasan a ser NaN ("no es un número").
         crudo = cruda.imu[columna].to_numpy(dtype=float, na_value=np.nan)
-        imu[columna] = mag_crudo_a_uT(crudo)
+        imu[columna] = mag_crudo_a_uT(crudo, asa)
     return imu
 
 

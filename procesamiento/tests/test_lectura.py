@@ -91,3 +91,21 @@ def test_sesion_sin_magnetometro_se_carga_con_nan(tmp_path):
 
     assert sesion.imu[lectura.COLUMNAS_MAG].isna().all().all()
     assert sesion.imu["az"].notna().all()
+
+
+def test_ajuste_de_sensibilidad_del_magnetometro():
+    # asa = 128 no cambia nada; asa = 192 aumenta 25 %: (192 - 128)/256 + 1 = 1,25.
+    assert lectura.factor_ajuste_ak8963(128) == pytest.approx(1.0)
+    assert lectura.factor_ajuste_ak8963(192) == pytest.approx(1.25)
+    assert lectura.mag_crudo_a_uT(100, asa=192) == pytest.approx(100 * 0.15 * 1.25)
+
+
+def test_cargar_sesion_aplica_ak8963_asa_si_esta_en_meta(tmp_path):
+    cruda = formato.leer_sesion_cruda(_sesion_cruda_pequena(tmp_path))
+    sin_ajuste = lectura.convertir_sesion(cruda)
+    cruda.meta["ak8963_asa"] = [192, 128, 64]
+
+    con_ajuste = lectura.convertir_sesion(cruda)
+
+    for columna, factor in zip(["mx", "my", "mz"], [1.25, 1.0, 0.75]):
+        np.testing.assert_allclose(con_ajuste.imu[columna], sin_ajuste.imu[columna] * factor)
