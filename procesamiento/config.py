@@ -226,6 +226,33 @@ SIM_ASCENSOR_REPOSO_FINAL_S = 10.0
 SIM_ASCENSOR_ALABEO_GRADOS = 1.5        # el dispositivo no queda perfectamente nivelado
 SIM_ASCENSOR_CABECEO_GRADOS = -1.0
 
+# Metro SINTÉTICO: ruta inventada, NO es el trazado del Metro de Quito.
+SIM_METRO_ESTACIONES = ("Sintética A", "Sintética B", "Sintética C", "Sintética D", "Sintética E")
+# Un tramo por cada par de estaciones seguidas. Cada tramo es una lista de piezas:
+#   ("recta", longitud en m)   o   ("curva", radio en m, ángulo en grados; + = a la izquierda)
+SIM_METRO_TRAMOS = (
+    (("recta", 800.0),),
+    (("recta", 300.0), ("curva", 400.0, 40.0), ("recta", 350.0)),
+    (("recta", 250.0), ("curva", 500.0, -65.0), ("recta", 400.0)),
+    (("recta", 1000.0),),
+)
+# Desnivel de cada tramo, en m (+ = sube). Un tramo recto no es necesariamente horizontal.
+SIM_METRO_DESNIVELES_M = (0.0, 8.0, -5.0, 3.0)
+SIM_METRO_RUMBO_INICIAL_GRADOS = 20.0   # dirección de salida, medida desde el este hacia el norte
+SIM_METRO_VELOCIDAD_MAX_MS = 20.0       # 72 km/h   TODO: comparar con la velocidad real del metro
+SIM_METRO_DURACION_RAMPA_S = 35.0       # arranque o frenado (aceleración máxima ≈ 1,1 m/s²)
+SIM_METRO_PARADA_S = 25.0               # tiempo detenido en cada estación
+SIM_METRO_ESPERA_BOTON_S = 1.0          # la persona pulsa 1 s antes de salir y 1 s después de llegar
+SIM_METRO_REPOSO_INICIAL_S = 30.0
+SIM_METRO_REPOSO_FINAL_S = 15.0
+SIM_METRO_MONTAJE_GRADOS = 10.0         # el eje x del dispositivo no apunta exactamente hacia adelante
+SIM_METRO_ALABEO_GRADOS = 1.0           # y el dispositivo no queda perfectamente nivelado
+SIM_METRO_CABECEO_GRADOS = -0.5
+# Perturbación magnética dentro del vagón (SINTÉTICA): un campo fijo del hierro del vagón, en
+# ejes del dispositivo, y otro proporcional a la aceleración (corriente de los motores).
+SIM_METRO_MAG_HIERRO_UT = (15.0, -10.0, 5.0)
+SIM_METRO_MAG_MOTOR_UT_POR_MS2 = (12.0, 6.0, 4.0)
+
 # ---------------------------------------------------------------------------
 # Barómetro: altura a partir de la presión
 # ---------------------------------------------------------------------------
@@ -257,6 +284,23 @@ KALMAN_BARO_STD_M = 0.3
 # Medición "velocidad = 0" en las paradas (ZUPT), en m/s.
 KALMAN_ZUPT_STD_MS = 0.01
 # TODO: los tres valores salen del simulador; recalcular con la caracterización real.
+
+# Metro: segundos después de la primera salida que se usan para medir hacia dónde apunta
+# "adelante" en los ejes del dispositivo (el tren solo puede acelerar hacia adelante).
+METRO_VENTANA_ARRANQUE_S = 8.0
+# Ventana del promedio móvil que suaviza la altura barométrica antes de calcular la pendiente.
+METRO_VENTANA_BARO_S = 6.0
+# Por debajo de esta velocidad no se calcula la pendiente (dividir por una velocidad casi nula
+# amplifica el ruido); se supone que la vía es horizontal en las estaciones.
+METRO_VELOCIDAD_MINIMA_PENDIENTE_MS = 3.0
+# El magnetómetro se considera confiable si la magnitud del campo varía menos que esta
+# fracción (el campo de la Tierra tiene magnitud constante; si cambia, hay otra fuente).
+# TODO: ajustar con datos reales.
+MAG_VARIACION_MAXIMA_CONFIABLE = 0.10
+
+# Radio medio de la Tierra, en m, para pasar latitud/longitud a metros en un mapa local.
+# Fuente: radio medio IUGG (R1) = 6 371 008,8 m. TODO: citar fuente.
+RADIO_TIERRA_M = 6371008.8
 
 # Monte Carlo: cantidad de simulaciones con semillas distintas.
 MONTE_CARLO_CANTIDAD = 40

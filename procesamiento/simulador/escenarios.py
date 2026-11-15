@@ -291,6 +291,28 @@ def _recorridos_del_ascensor(alturas_m, itinerario, velocidad_max_ms, duracion_r
     return recorridos, eventos
 
 
+def _movimiento_por_recorridos(t_s, posiciones_m, recorridos, velocidad_max_ms, duracion_rampa_s):
+    """Posición, velocidad y aceleración (en una dimensión) de un vehículo que va de parada
+    en parada. posiciones_m: posición de cada parada. recorridos: horario (ver
+    _recorridos_del_ascensor)."""
+    t_s = np.asarray(t_s, dtype=float)
+    posicion = np.full(len(t_s), float(posiciones_m[recorridos[0]["piso_origen"]]))
+    velocidad = np.zeros(len(t_s))
+    aceleracion = np.zeros(len(t_s))
+    for recorrido in recorridos:
+        p_origen = posiciones_m[recorrido["piso_origen"]]
+        p_destino = posiciones_m[recorrido["piso_destino"]]
+        sentido = np.sign(p_destino - p_origen)                 # +1 sube o avanza, −1 al revés
+        desde_salida = t_s >= recorrido["t_salida_s"]
+        avance, v, a = perfil_de_movimiento(
+            t_s[desde_salida] - recorrido["t_salida_s"], abs(p_destino - p_origen),
+            velocidad_max_ms, duracion_rampa_s)
+        posicion[desde_salida] = p_origen + sentido * avance
+        velocidad[desde_salida] = sentido * v
+        aceleracion[desde_salida] = sentido * a
+    return posicion, velocidad, aceleracion
+
+
 def crear_ascensor(alturas_m=config.SIM_ASCENSOR_ALTURAS_PISOS_M,
                    itinerario=config.SIM_ASCENSOR_ITINERARIO):
     """Ascensor SINTÉTICO: sube y baja entre pisos de alturas distintas, con paradas.
@@ -311,22 +333,9 @@ def crear_ascensor(alturas_m=config.SIM_ASCENSOR_ALTURAS_PISOS_M,
 
     def movimiento_vertical(t_s):
         """Altura, velocidad y aceleración verticales verdaderas en cada instante."""
-        t_s = np.asarray(t_s, dtype=float)
-        altura = np.full(len(t_s), float(alturas_m[itinerario[0]]))
-        velocidad = np.zeros(len(t_s))
-        aceleracion = np.zeros(len(t_s))
-        for recorrido in recorridos:
-            h_origen = alturas_m[recorrido["piso_origen"]]
-            h_destino = alturas_m[recorrido["piso_destino"]]
-            sentido = np.sign(h_destino - h_origen)             # +1 sube, −1 baja
-            desde_salida = t_s >= recorrido["t_salida_s"]
-            posicion, v, a = perfil_de_movimiento(
-                t_s[desde_salida] - recorrido["t_salida_s"], abs(h_destino - h_origen),
-                config.SIM_ASCENSOR_VELOCIDAD_MAX_MS, config.SIM_ASCENSOR_DURACION_RAMPA_S)
-            altura[desde_salida] = h_origen + sentido * posicion
-            velocidad[desde_salida] = sentido * v
-            aceleracion[desde_salida] = sentido * a
-        return altura, velocidad, aceleracion
+        return _movimiento_por_recorridos(
+            t_s, alturas_m, recorridos, config.SIM_ASCENSOR_VELOCIDAD_MAX_MS,
+            config.SIM_ASCENSOR_DURACION_RAMPA_S)
 
     def estado(t_s):
         altura, velocidad, aceleracion = movimiento_vertical(t_s)
@@ -349,4 +358,186 @@ def crear_ascensor(alturas_m=config.SIM_ASCENSOR_ALTURAS_PISOS_M,
             "itinerario": [int(p) for p in itinerario], "recorridos": recorridos}
     return Escenario(nombre="ascensor", duracion_s=duracion_total, estado=estado,
                      tiempos_eventos_s=eventos, altura=lambda t_s: movimiento_vertical(t_s)[0],
+                     info=info)
+
+
+# ---------------------------------------------------------------------------
+# Escenario 4: metro (ruta SINTÉTICA en 2D)
+# ---------------------------------------------------------------------------
+
+class Ruta:
+    """Trazado en planta hecho de rectas y arcos de círculo, con un perfil de alturas.
+
+    La posición a lo largo de la ruta se mide con s, la distancia recorrida en m desde la
+    primera estación (como los kilómetros de una carretera).
+    """
+
+    def __init__(self, tramos, desniveles_m, rumbo_inicial_rad):
+        # Tabla de piezas: s donde empieza, punto y rumbo de inicio, curvatura (1/radio).
+        self.piezas = []
+        self.s_estaciones = [0.0]
+        self.h_estaciones = [0.0]
+        s, x, y, rumbo = 0.0, 0.0, 0.0, rumbo_inicial_rad
+        for piezas_del_tramo, desnivel in zip(tramos, desniveles_m):
+            for pieza in piezas_del_tramo:
+                if pieza[0] == "recta":
+                    largo, curvatura = pieza[1], 0.0
+                else:
+                    radio, angulo = pieza[1], np.radians(pieza[2])
+                    largo, curvatura = radio * abs(angulo), np.sign(angulo) / radio
+                self.piezas.append((s, x, y, rumbo, curvatura))
+                x, y, rumbo = self._avanzar(x, y, rumbo, curvatura, largo)
+                s += largo
+            self.s_estaciones.append(s)
+            self.h_estaciones.append(self.h_estaciones[-1] + desnivel)
+        self.largo_total = s
+
+    @staticmethod
+    def _avanzar(x, y, rumbo, curvatura, distancia):
+        """Punto y rumbo después de avanzar una distancia por una recta o un arco."""
+        if curvatura == 0.0:
+            return x + distancia * np.cos(rumbo), y + distancia * np.sin(rumbo), rumbo + 0 * distancia
+        rumbo_nuevo = rumbo + curvatura * distancia
+        return (x + (np.sin(rumbo_nuevo) - np.sin(rumbo)) / curvatura,
+                y - (np.cos(rumbo_nuevo) - np.cos(rumbo)) / curvatura, rumbo_nuevo)
+
+    def planta(self, s):
+        """x, y (m), rumbo (rad) y curvatura (1/m) en la posición s (arreglo)."""
+        s = np.clip(np.asarray(s, dtype=float), 0.0, self.largo_total)
+        x, y, rumbo, curvatura = (np.zeros_like(s) for _ in range(4))
+        inicios = np.array([pieza[0] for pieza in self.piezas])
+        indice = np.clip(np.searchsorted(inicios, s, side="right") - 1, 0, len(self.piezas) - 1)
+        for k, (s0, x0, y0, rumbo0, curvatura0) in enumerate(self.piezas):
+            aqui = indice == k
+            x[aqui], y[aqui], rumbo[aqui] = self._avanzar(x0, y0, rumbo0, curvatura0, s[aqui] - s0)
+            curvatura[aqui] = curvatura0
+        return x, y, rumbo, curvatura
+
+    def perfil(self, s):
+        """Altura h (m), pendiente dh/ds y su derivada d²h/ds² en la posición s.
+
+        En cada tramo la altura cambia con la rampa suave: las estaciones son horizontales
+        y la pendiente máxima está en la mitad del tramo.
+        """
+        s = np.clip(np.asarray(s, dtype=float), 0.0, self.largo_total)
+        h, pendiente, curvatura_vertical = (np.zeros_like(s) for _ in range(3))
+        for k in range(len(self.s_estaciones) - 1):
+            s0, s1 = self.s_estaciones[k], self.s_estaciones[k + 1]
+            desnivel = self.h_estaciones[k + 1] - self.h_estaciones[k]
+            largo = s1 - s0
+            aqui = (s >= s0) & (s <= s1)
+            u = (s[aqui] - s0) / largo
+            valor, derivada, _ = _rampa(u)
+            h[aqui] = self.h_estaciones[k] + desnivel * valor
+            pendiente[aqui] = desnivel / largo * derivada
+            curvatura_vertical[aqui] = desnivel / largo**2 * 2 * np.pi * np.sin(2 * np.pi * u)
+        return h, pendiente, curvatura_vertical
+
+
+def _a_ejes_del_vagon(vector_mundo, rumbo, inclinacion):
+    """Componentes (adelante, izquierda, arriba) de vectores dados en ejes del mundo.
+
+    El vagón apunta según el rumbo (giro alrededor de la vertical) y sube o baja según la
+    inclinación de la vía. vector_mundo: arreglo de n x 3.
+    """
+    c_r, s_r, c_i, s_i = np.cos(rumbo), np.sin(rumbo), np.cos(inclinacion), np.sin(inclinacion)
+    adelante = np.column_stack([c_r * c_i, s_r * c_i, s_i])
+    izquierda = np.column_stack([-s_r, c_r, np.zeros_like(rumbo)])
+    arriba = np.column_stack([-c_r * s_i, -s_r * s_i, c_i])
+    return np.column_stack([np.sum(vector_mundo * eje, axis=1)
+                            for eje in (adelante, izquierda, arriba)])
+
+
+def crear_metro(sentido=1, nombre="metro"):
+    """Viaje en metro por una ruta SINTÉTICA con rectas, curvas, pendientes y paradas.
+
+    sentido: +1 recorre las estaciones en el orden de config.py; −1 en el orden contrario.
+    El dispositivo va fijo al vagón, con el eje x casi hacia adelante (girado
+    SIM_METRO_MONTAJE_GRADOS) y un poco inclinado.
+
+    Columnas extra de verdad: x_m, y_m (posición en el mapa), altura_m, rumbo_rad,
+    velocidad_ms (a lo largo de la vía), aceleracion_ms2 (a lo largo de la vía),
+    distancia_m (recorrida desde la primera estación del viaje).
+    """
+    ruta = Ruta(config.SIM_METRO_TRAMOS, config.SIM_METRO_DESNIVELES_M,
+                np.radians(config.SIM_METRO_RUMBO_INICIAL_GRADOS))
+    s_estaciones = np.array(ruta.s_estaciones)
+    nombres = list(config.SIM_METRO_ESTACIONES)
+    if sentido == -1:
+        nombres = nombres[::-1]
+    # d = distancia recorrida en ESTE viaje. De ida, s = d; de vuelta, s = largo total − d.
+    d_estaciones = s_estaciones if sentido == 1 else (ruta.largo_total - s_estaciones)[::-1]
+
+    recorridos, eventos = _recorridos_del_ascensor(
+        d_estaciones, list(range(len(d_estaciones))), config.SIM_METRO_VELOCIDAD_MAX_MS,
+        config.SIM_METRO_DURACION_RAMPA_S, config.SIM_METRO_ESPERA_BOTON_S,
+        config.SIM_METRO_PARADA_S - 2 * config.SIM_METRO_ESPERA_BOTON_S,
+        config.SIM_METRO_REPOSO_INICIAL_S)
+    duracion_total = eventos[-1] + config.SIM_METRO_REPOSO_FINAL_S
+    R_montaje = (matriz_rotacion("z", np.radians(config.SIM_METRO_MONTAJE_GRADOS))
+                 @ orientacion_inclinada(config.SIM_METRO_ALABEO_GRADOS,
+                                         config.SIM_METRO_CABECEO_GRADOS))
+    _, campo_mundo = _vectores_del_mundo()
+
+    def geometria(d):
+        """Planta y perfil en la distancia recorrida d, teniendo en cuenta el sentido."""
+        s = d if sentido == 1 else ruta.largo_total - d
+        x, y, rumbo, curvatura = ruta.planta(s)
+        h, pendiente, curvatura_vertical = ruta.perfil(s)
+        if sentido == -1:
+            # Al revés: se mira hacia el otro lado; las curvas y las pendientes cambian de signo.
+            rumbo, curvatura, pendiente = rumbo + np.pi, -curvatura, -pendiente
+        return x, y, rumbo, curvatura, h - ruta.perfil(geometria_inicio)[0], pendiente, curvatura_vertical
+
+    geometria_inicio = np.array([0.0 if sentido == 1 else ruta.largo_total])
+
+    def estado(t_s):
+        d, v, a = _movimiento_por_recorridos(
+            t_s, d_estaciones, recorridos, config.SIM_METRO_VELOCIDAD_MAX_MS,
+            config.SIM_METRO_DURACION_RAMPA_S)
+        x, y, rumbo, curvatura, h, pendiente, curvatura_vertical = geometria(d)
+        n = len(d)
+        inclinacion = np.arctan(pendiente)
+        # Aceleración en ejes del mundo: a lo largo de la vía, centrípeta (v²/radio, hacia
+        # el centro de la curva) y vertical (segunda derivada de la altura).
+        tangente = np.column_stack([np.cos(rumbo), np.sin(rumbo), np.zeros(n)])
+        normal = np.column_stack([-np.sin(rumbo), np.cos(rumbo), np.zeros(n)])
+        aceleracion_mundo = a[:, None] * tangente + (v**2 * curvatura)[:, None] * normal
+        aceleracion_mundo[:, 2] = curvatura_vertical * v**2 + pendiente * a
+        fuerza_mundo = aceleracion_mundo.copy()
+        fuerza_mundo[:, 2] += config.G_QUITO
+
+        # Velocidad angular en ejes del vagón: giro del rumbo (vertical) y de la inclinación.
+        giro_rumbo = v * curvatura
+        giro_inclinacion = curvatura_vertical * v / (1 + pendiente**2)
+        w_vagon = np.column_stack([giro_rumbo * np.sin(inclinacion), -giro_inclinacion,
+                                   giro_rumbo * np.cos(inclinacion)])
+
+        campo_vagon = _a_ejes_del_vagon(np.tile(campo_mundo, (n, 1)), rumbo, inclinacion)
+        campo = (campo_vagon @ R_montaje + np.array(config.SIM_METRO_MAG_HIERRO_UT)
+                 + a[:, None] * np.array(config.SIM_METRO_MAG_MOTOR_UT_POR_MS2))
+        tabla = _armar_estado(
+            fuerza=_a_ejes_del_vagon(fuerza_mundo, rumbo, inclinacion) @ R_montaje,
+            velocidad_angular=w_vagon @ R_montaje,
+            campo=campo,
+            tramo=np.where(v == 0, "parada", "movimiento"),
+        )
+        for columna, valores in [("x_m", x), ("y_m", y), ("altura_m", h), ("rumbo_rad", rumbo),
+                                 ("velocidad_ms", v), ("aceleracion_ms2", a), ("distancia_m", d)]:
+            tabla[columna] = valores
+        return tabla
+
+    x_est, y_est, rumbo_est, _, h_est, _, _ = geometria(np.asarray(d_estaciones, dtype=float))
+    x_trazado, y_trazado, _, _ = ruta.planta(np.arange(0.0, ruta.largo_total + 1.0, 10.0))
+    info = {
+        "SINTETICO": True, "sentido": int(sentido),
+        "estaciones": [{"nombre": nombre_estacion, "x_m": float(x_est[k]), "y_m": float(y_est[k]),
+                        "altura_m": float(h_est[k])} for k, nombre_estacion in enumerate(nombres)],
+        "longitudes_tramos_m": [float(v) for v in np.diff(d_estaciones)],
+        "rumbo_inicial_rad": float(rumbo_est[0]),
+        "trazado": {"x_m": [float(v) for v in x_trazado], "y_m": [float(v) for v in y_trazado]},
+        "recorridos": recorridos,
+    }
+    return Escenario(nombre=nombre, duracion_s=duracion_total, estado=estado,
+                     tiempos_eventos_s=eventos, altura=lambda t_s: estado(t_s)["altura_m"].to_numpy(),
                      info=info)

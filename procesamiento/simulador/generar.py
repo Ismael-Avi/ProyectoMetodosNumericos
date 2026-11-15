@@ -43,7 +43,15 @@ FECHAS_SIMULADAS = {
     "reposo": datetime(2026, 1, 1, 8, 0, 0),
     "seis_caras": datetime(2026, 1, 1, 10, 0, 0),
     "ascensor": datetime(2026, 1, 1, 12, 0, 0),
+    "metro_1": datetime(2026, 1, 2, 8, 0, 0),
+    "metro_2": datetime(2026, 1, 3, 8, 0, 0),
+    "metro_3": datetime(2026, 1, 4, 18, 0, 0),
 }
+
+# Tres viajes en metro: los dos primeros en un sentido y el tercero en el contrario. Cada
+# uno usa una semilla distinta (semilla base + este número), como si fueran días distintos.
+VIAJES_EN_METRO = {"metro_1": (1, 1), "metro_2": (1, 2), "metro_3": (-1, 3)}   # (sentido, semilla extra)
+ESCENARIOS_DE_METRO = list(VIAJES_EN_METRO)
 
 
 @dataclass
@@ -142,6 +150,8 @@ def _crear_escenario(nombre, argumentos):
         return escenarios.crear_seis_caras()
     if nombre == "ascensor":
         return escenarios.crear_ascensor()
+    if nombre in VIAJES_EN_METRO:
+        return escenarios.crear_metro(sentido=VIAJES_EN_METRO[nombre][0], nombre=nombre)
     raise ValueError(f"Escenario desconocido: {nombre}")
 
 
@@ -162,8 +172,9 @@ def main():
     nombres = list(FECHAS_SIMULADAS) if argumentos.escenario == "todos" else [argumentos.escenario]
     for nombre in nombres:
         escenario = _crear_escenario(nombre, argumentos)
+        semilla_extra = VIAJES_EN_METRO[nombre][1] if nombre in VIAJES_EN_METRO else 0
         parametros = modelo_sensor.ParametrosSimulacion(
-            semilla=argumentos.semilla,
+            semilla=argumentos.semilla + semilla_extra,
             tiene_magnetometro=not argumentos.sin_magnetometro,
         )
         print(f"Simulando '{nombre}' ({escenario.duracion_s / 60:.1f} min)...", flush=True)
