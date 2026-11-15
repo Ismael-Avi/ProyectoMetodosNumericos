@@ -357,3 +357,34 @@ grupo. Los comandos se corren desde la carpeta `procesamiento/` con el entorno v
 - En el viaje real hay que pulsar el botón justo al arrancar y al parar, y anotar las estaciones.
 - `representacion_numerica.md`: confirmar con la hoja de datos la resolución real del BMP280 con el
   sobremuestreo usado (19 y 16 bits). El tamaño del error de redondeo es una estimación.
+
+---
+
+## Etapa 8: README y pendientes de hardware
+
+**Qué se hizo**
+- `README.md` completo: instalación en Windows, recorrido rápido con datos simulados, cómo usar el
+  programa con datos reales, qué hace cada script y cada módulo, formato de los archivos, datos de
+  referencia que faltan y qué queda para cuando llegue el hardware.
+- `docs/PENDIENTES_HARDWARE.md`: todo lo que solo se puede comprobar con el dispositivo armado, en
+  7 niveles de prioridad para la entrega del 22 de noviembre, con cómo comprobar cada punto y qué
+  hacer si falla.
+- Comprobación final: se generaron de nuevo todas las sesiones simuladas y se corrieron todos los
+  scripts desde cero, sin errores ni avisos; pasan las 179 pruebas; el firmware compila en sus dos
+  entornos (`registro` y `prueba`).
+
+**Decisiones**
+- Los pendientes están ordenados por lo que bloquea a lo demás: primero que el dispositivo grabe,
+  después los 90 minutos, después calibración, ascensor y metro. Las fuentes para el informe van
+  aparte porque no necesitan el dispositivo y se pueden buscar desde ya.
+- El README no repite los resultados: remite a este resumen, y avisa que son de datos simulados.
+
+**Qué revisar (importante)**
+- **Nada se ha probado con hardware.** El primer encuentro entre el firmware y Python es la primera
+  grabación corta (prioridad 1 de los pendientes). Conviene hacerla el mismo día del armado.
+- `resultados/calibracion/calibracion.json` es un solo archivo. `calibrar_seis_caras` sin argumentos
+  y `reporte_sesion --simulados` lo reemplazan con la calibración del simulador. Cuando ya exista
+  la calibración real, no correr esos dos comandos (o volver a correr las seis caras reales después).
+- El metro conviene empezarlo pronto: hacen falta varios viajes y no se pueden repetir al final.
+- Todos los `TODO: citar fuente` de `config.py` siguen abiertos (lista en la prioridad 6).
+- Todos los números de este resumen son de simulación. Los del informe deben salir de datos reales.
