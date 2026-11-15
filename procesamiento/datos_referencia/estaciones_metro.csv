@@ -1,0 +1,22 @@
+# Estaciones de la Línea 1 del Metro de Quito, de sur a norte.
+# TODO: verificar la lista y los nombres oficiales con una fuente (Metro de Quito / OpenStreetMap).
+# TODO: llenar lat y lon (grados decimales, WGS84) y la columna fuente. Están VACÍAS a propósito:
+#       no se inventan coordenadas. Mientras estén vacías, scripts/analizar_metro.py analiza los
+#       viajes reales sin referencia (sin mapa real ni errores).
+# Los nombres deben escribirse igual en la opción --estaciones de scripts/analizar_metro.py.
+orden,estacion,lat,lon,fuente
+1,Quitumbe,,,
+2,Morán Valverde,,,
+3,Solanda,,,
+4,El Calzado,,,
+5,El Recreo,,,
+6,La Magdalena,,,
+7,San Francisco,,,
+8,La Alameda,,,
+9,El Ejido,,,
+10,Universidad Central,,,
+11,La Pradera,,,
+12,La Carolina,,,
+13,Iñaquito,,,
+14,Jipijapa,,,
+15,El Labrador,,,

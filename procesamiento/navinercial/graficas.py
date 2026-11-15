@@ -409,3 +409,70 @@ def grafica_prediccion(t_s, observado, predicho, titulo, etiqueta_y, nombre_obse
     _leyenda_arriba(eje, columnas=2)
     _aplicar_estilo(eje, titulo, "tiempo (s)", etiqueta_y)
     return figura
+
+
+# ---------------------------------------------------------------------------
+# Metro
+# ---------------------------------------------------------------------------
+
+def grafica_mapa(trayectorias, trazado=None, estaciones=None, titulo="Recorrido sobre el mapa"):
+    """Trayectorias calculadas sobre el mapa local (x = este, y = norte, en m).
+
+    trayectorias: diccionario {nombre: (x, y)}. trazado: (x, y) del trazado de referencia, o
+    None. estaciones: lista de diccionarios con nombre, x_m, y_m, o None.
+    Los dos ejes usan la misma escala (1 m en x se ve igual que 1 m en y).
+    """
+    figura, eje = plt.subplots(figsize=(11, 6.5))
+    if trazado is not None:
+        eje.plot(trazado[0], trazado[1], color=COLOR_VERDAD, linewidth=5, alpha=0.3,
+                 label="trazado de referencia", solid_capstyle="round")
+    for (nombre, (x, y)), color in zip(trayectorias.items(), COLORES_DE_SERIES):
+        x_d, y_d = _diezmar(x, y)
+        eje.plot(x_d, y_d, color=color, linewidth=1.6, label=nombre)
+    if estaciones is not None:
+        for estacion in estaciones:
+            eje.plot(estacion["x_m"], estacion["y_m"], "o", markersize=8, color="white",
+                     markeredgecolor=COLOR_TEXTO, markeredgewidth=1.5, zorder=5)
+            eje.annotate(estacion["nombre"], (estacion["x_m"], estacion["y_m"]), xytext=(8, -14),
+                         textcoords="offset points", fontsize=9, color=COLOR_TEXTO)
+    eje.set_aspect("equal", adjustable="datalim")
+    _leyenda_arriba(eje, columnas=2)
+    _aplicar_estilo(eje, titulo, "este (m)", "norte (m)")
+    return figura
+
+
+def grafica_viaje(t_s, velocidades, alturas, tiempos_eventos_s, verdad_velocidad=None,
+                  verdad_altura=None):
+    """Velocidad a lo largo de la vía (arriba) y altura (abajo) durante un viaje."""
+    figura, (eje_v, eje_h) = plt.subplots(2, 1, figsize=(12, 7.5), sharex=True,
+                                          height_ratios=[3, 2])
+    _dibujar_series(eje_v, t_s, velocidades, verdad_velocidad)
+    _marcar_eventos(eje_v, tiempos_eventos_s)
+    _leyenda_arriba(eje_v, columnas=3)
+    _aplicar_estilo(eje_v, "Velocidad", None, "velocidad (m/s)")
+
+    _dibujar_series(eje_h, t_s, alturas, verdad_altura)
+    _marcar_eventos(eje_h, tiempos_eventos_s)
+    _leyenda_arriba(eje_h, columnas=3)
+    _aplicar_estilo(eje_h, "Altura (rayas grises abajo: pulsaciones del botón)", "tiempo (s)",
+                    "altura sobre la salida (m)")
+    figura.tight_layout()
+    return figura
+
+
+def grafica_rumbo(t_s, rumbo_gyro_rad, magnetometro=None, verdad_rumbo_rad=None):
+    """Rumbo del vagón en el tiempo: giroscopio, magnetómetro (si hay) y verdad (si hay).
+
+    El rumbo se dibuja "desenrollado" (sin saltos de 360°) y en grados.
+    """
+    figura, eje = plt.subplots(figsize=(12, 4.8))
+    series = {"giroscopio (integrado)": np.degrees(rumbo_gyro_rad)}
+    verdad = None if verdad_rumbo_rad is None else np.degrees(np.unwrap(verdad_rumbo_rad))
+    if magnetometro is not None:
+        t_m, r_m = _diezmar(magnetometro["t_s"], np.degrees(np.unwrap(magnetometro["rumbo_rad"])))
+        estado = "confiable" if magnetometro["confiable"] else "NO confiable"
+        eje.plot(t_m, r_m, color=COLORES_DE_SERIES[1], linewidth=1, label=f"magnetómetro ({estado})")
+    _dibujar_series(eje, t_s, series, verdad)
+    _leyenda_arriba(eje, columnas=3)
+    _aplicar_estilo(eje, "Rumbo", "tiempo (s)", "rumbo (grados desde el este)")
+    return figura

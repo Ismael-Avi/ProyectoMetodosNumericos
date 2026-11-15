@@ -208,7 +208,10 @@ def _guardar_graficas(carpeta_salida, sesion, analisis, alturas_pisos, itinerari
 
 def analizar_y_guardar(carpeta_sesion, carpeta_salida, archivo_pisos=None, texto_itinerario=None,
                        archivo_calibracion=calibracion.ARCHIVO_CALIBRACION):
-    """Analiza la sesión, guarda el reporte, las tablas y las gráficas. Devuelve el reporte."""
+    """Analiza la sesión y guarda el reporte, las tablas y las gráficas.
+
+    Devuelve un diccionario con el reporte (texto) y el análisis.
+    """
     carpeta_salida = Path(carpeta_salida)
     carpeta_salida.mkdir(parents=True, exist_ok=True)
     cruda = lectura.cargar_sesion(carpeta_sesion)
@@ -259,7 +262,7 @@ def analizar_y_guardar(carpeta_sesion, carpeta_salida, archivo_pisos=None, texto
     (carpeta_salida / "reporte.txt").write_text(reporte, encoding="utf-8")
     _guardar_graficas(carpeta_salida, sesion, analisis, alturas_pisos, itinerario,
                       verdad_altura, verdad_velocidad, resumen)
-    return reporte
+    return {"reporte": reporte, "analisis": analisis}
 
 
 def main():
@@ -274,7 +277,9 @@ def main():
 
     carpeta_sesion = Path(argumentos.sesion or generar.carpeta_de_escenario("ascensor"))
     carpeta_salida = config.CARPETA_RESULTADOS / "ascensor" / carpeta_sesion.name
-    print(analizar_y_guardar(carpeta_sesion, carpeta_salida, argumentos.pisos, argumentos.itinerario))
+    resultado = analizar_y_guardar(carpeta_sesion, carpeta_salida, argumentos.pisos,
+                                   argumentos.itinerario)
+    print(resultado["reporte"])
     print(f"\nReporte, tablas y gráficas guardados en: {carpeta_salida}")
 
 
