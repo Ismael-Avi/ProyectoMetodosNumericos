@@ -283,3 +283,77 @@ grupo. Los comandos se corren desde la carpeta `procesamiento/` con el entorno v
 - Temperatura: el BMP280 mide la del dispositivo, no la del aire. Un error de 3 K cambia la altura 1 %.
 - En el experimento real hay que anotar en la bitácora el piso de cada parada (opción
   `--itinerario`); si no, el programa asigna el piso más cercano.
+
+---
+
+## Etapa 7: análisis del metro, bitácora, reportes y representación numérica
+
+**Qué se hizo**
+- Simulador: escenarios `metro_1`, `metro_2` (ida) y `metro_3` (vuelta) sobre una ruta SINTÉTICA de
+  5 estaciones ("Sintética A" a "Sintética E"), con rectas, curvas y desniveles. El dispositivo va
+  girado 10° respecto al vagón y el magnetómetro se perturba con hierro y con la corriente del motor.
+- `navinercial/metro.py`: orientación del dispositivo respecto al vagón, rumbo integrando el
+  giroscopio, velocidad a lo largo de la vía con ZUPT, corrección de la pendiente con el barómetro,
+  posición en el mapa, ajuste a distancias conocidas, prueba de confiabilidad del magnetómetro,
+  proyección de latitud/longitud a metros y combinación de varios viajes.
+- `scripts/analizar_metro.py`: reporte y gráficas por viaje (`resultados/metro/<sesión>/`) y
+  combinado (`resultados/metro/combinado/`).
+- `datos_referencia/estaciones_metro.csv` (nombres de las 15 estaciones, coordenadas VACÍAS) y
+  `datos_referencia/tramos_metro.csv` (solo el encabezado).
+- `navinercial/bitacora.py`, `bitacora/bitacora.csv` (plantilla) y `bitacora/README.md` (qué va en
+  cada columna).
+- `scripts/reporte_sesion.py`: verificación + análisis según el tipo + fila en la bitácora +
+  `resultados/reportes/<sesión>.md`.
+- `docs/representacion_numerica.md`: tipo de dato de cada magnitud en cada paso, qué se pierde,
+  cuánto vale 1 LSB, por qué `t_us` es de 64 bits y por qué todo se calcula en `float64`.
+
+**Resultados con los tres viajes simulados (7,6 min y unos 3,9 km cada uno)**
+
+| Estimación | Error RMS de velocidad | Error de posición al final |
+|---|---|---|
+| Sin ZUPT (solo sesgo inicial) | 2,0 a 2,4 m/s | 600 a 720 m |
+| ZUPT, sin barómetro | 0,38 a 0,39 m/s | 29 a 37 m |
+| ZUPT + pendiente con barómetro | 0,025 a 0,033 m/s | 2 a 10 m |
+| Además, ajustado a distancias conocidas | 0,016 a 0,024 m/s | 1 a 9 m |
+
+- El programa encuentra la orientación del dispositivo (entre −10,2° y −10,5°; el valor real es −10°).
+- Rumbo por giroscopio: error máximo de 0,34° en todo el viaje.
+- Magnetómetro: |B| varía entre 21 % y 32 %, y el programa lo marca como NO confiable.
+- Entre los tres viajes, la distancia de cada tramo se repite con una dispersión de 0,3 a 1,7 m.
+
+**Decisiones**
+- Modelo del vagón: solo avanza a lo largo de la vía (no se desliza de lado ni salta). Se integra
+  una sola aceleración ("adelante") y la dirección la da el giroscopio. Es mucho más estable que
+  integrar x e y por separado.
+- "Adelante" se saca del primer arranque (ventana de 8 s tras la primera salida): la aceleración
+  horizontal de ese momento apunta en la dirección de la vía. Se supone el dispositivo fijo y casi
+  horizontal durante todo el viaje.
+- Pendiente: en una subida, la gravedad se cuela en el eje "adelante" (g·sen θ) y parece
+  aceleración. Se corrige con el barómetro: sen θ = (dh/dt)/v, solo cuando v > 3 m/s. Esta
+  corrección es la que más mejora el resultado.
+- El rumbo inicial y la posición inicial son DATOS (de la estación de salida). El programa no los
+  puede saber sin GPS ni un magnetómetro confiable.
+- Misma convención del botón que en el ascensor (salida/llegada alternadas).
+- Las sesiones del simulador se anotan en `resultados/bitacora_simulada.csv`, no en la bitácora del
+  grupo, para no mezclar datos inventados con experimentos reales.
+- Un solo script de reporte con `--tipo`, que reutiliza los scripts de cada análisis.
+
+**Qué revisar (importante)**
+- **Todo lo del metro está probado solo con una ruta inventada.** Las curvas reales, las vibraciones
+  y los frenazos no están en el simulador. Lo primero con datos reales es mirar si el vagón de
+  verdad no tiene aceleración lateral rara y si "adelante" sale bien del primer arranque.
+- La perturbación del magnetómetro es SINTÉTICA (`SIM_METRO_MAG_*`). Que salga "no confiable" en la
+  simulación no dice nada del metro real: hay que medirlo.
+- `estaciones_metro.csv`: faltan latitud y longitud de cada estación, con su fuente. Hay que
+  confirmar también los nombres. `tramos_metro.csv`: faltan las longitudes reales de los tramos.
+  Sin esos datos el programa da distancias, pero no puede decir cuánto se equivoca.
+- Declinación magnética de Quito: no está en `config.py` (TODO). Solo hace falta si se llega a
+  usar el magnetómetro para el rumbo.
+- Umbrales ajustados al simulador: `METRO_VENTANA_ARRANQUE_S`, `METRO_VENTANA_BARO_S`,
+  `METRO_VELOCIDAD_MINIMA_PENDIENTE_MS`, `MAG_VARIACION_MAXIMA_CONFIABLE`.
+- En los túneles, la presión cambia al entrar y salir de las estaciones y cuando se cruza otro tren
+  (efecto pistón). El simulador no lo incluye y puede dañar la corrección de la pendiente. Comparar
+  el resultado con y sin barómetro en los datos reales.
+- En el viaje real hay que pulsar el botón justo al arrancar y al parar, y anotar las estaciones.
+- `representacion_numerica.md`: confirmar con la hoja de datos la resolución real del BMP280 con el
+  sobremuestreo usado (19 y 16 bits). El tamaño del error de redondeo es una estimación.
