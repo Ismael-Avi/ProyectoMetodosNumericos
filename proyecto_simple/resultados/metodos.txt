@@ -1,0 +1,19 @@
+=== Pruebas de los metodos numericos ===
+BMP280, ejemplo de la hoja de datos: T = 25.0825 °C (esperado ~25.08), P = 100653.2668 Pa (esperado ~100653.27) -> OK
+Senal de prueba: a(t) = 0.5 sin(w t), w = 2pi*0.15 rad/s, 30 s. Exactas: v = A/w (1 - cos wt), x = A/w (t - sin(wt)/w)
+fs (Hz) | dt (s) | error x rectangulo (m) | error x trapecio (m)
+    25 | 0.04000 | 4.432e-02 | 1.885e-03
+    50 | 0.02000 | 2.169e-02 | 4.712e-04
+   100 | 0.01000 | 1.073e-02 | 1.178e-04
+   200 | 0.00500 | 5.335e-03 | 2.945e-05
+   400 | 0.00250 | 2.660e-03 | 7.363e-06
+   800 | 0.00125 | 1.328e-03 | 1.841e-06
+Orden observado (al dividir dt a la mitad): rectangulo 1.00 (teoria 1), trapecio 2.00 (teoria 2)
+Trapecio propio vs np.trapezoid: diferencia 2.44e-15 m/s
+Interpolacion lineal de sin(pi t) muestreado a 25 Hz llevado a 200 Hz: error maximo 1.97e-03 (cota h²/8·max|f''| = 1.97e-03), diferencia con np.interp 1.1e-16
+Biseccion de x³ - 2x - 5 en [2, 3]: 2.0945514816; np.roots: 2.0945514815; diferencia 2.6e-11; iteraciones para tol 1e-10: 34
+--- Error del metodo vs error del sensor (fs 200 Hz, 30 s, sesgo 0.05 m/s², ruido 0.02 m/s²) ---
+  solo metodo (senal exacta): -2.95e-05 m
+  con sesgo: 22.500 m; prediccion ½·b·t² = 22.500 m -> el sensor aporta 22.500 m
+  con ruido (200 repeticiones): desv. est. 0.1371 m; prediccion ruido·raiz(dt)·t^1.5/raiz(3) = 0.1342 m
+  Conclusion: el error del metodo es ~8e+05 veces menor que el del sesgo del sensor.

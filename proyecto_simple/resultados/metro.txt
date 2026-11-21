@@ -1,0 +1,44 @@
+=== Metro ===
+Calibracion de caras usada: sesion caras
+--- Viaje metro_1 (458.3 s) ---
+Sesgo del giroscopio medido en los primeros 10.0 s: [ 0.5   -0.301  0.201] °/s (se resta)
+Paradas (ZUPT) segun eventos.csv (pares salida/llegada)
+Direccion 'adelante' (primer arranque) en ejes del dispositivo: [ 0.978 -0.207 -0.005]
+Sin referencia (estaciones.csv / viajes.csv vacios para esta sesion): no se calcula error de distancia
+ tramo  duracion    dist  dist_baro  v_max  a_max  subida  v_media
+     0     77.00  799.91     796.88  19.94   1.24   -0.47    10.35
+     1     83.46  928.14     923.80  20.02   1.23    7.87    11.07
+     2     97.85 1219.76    1217.07  20.24   1.24   -5.06    12.44
+     3     87.00  998.92    1003.27  20.07   1.24    3.06    11.53
+Distancia total: 3946.7 m sin baro, 3941.0 m con baro; sin ZUPT la velocidad final queda en 3.87 m/s
+--- Viaje metro_2 (458.3 s) ---
+Sesgo del giroscopio medido en los primeros 10.0 s: [ 0.498 -0.303  0.203] °/s (se resta)
+Paradas (ZUPT) segun eventos.csv (pares salida/llegada)
+Direccion 'adelante' (primer arranque) en ejes del dispositivo: [ 0.985 -0.174 -0.005]
+Sin referencia (estaciones.csv / viajes.csv vacios para esta sesion): no se calcula error de distancia
+ tramo  duracion    dist  dist_baro  v_max  a_max  subida  v_media
+     0     77.00  800.20     799.54  19.99   1.25   -0.14    10.38
+     1     83.46  928.48     933.90  20.06   1.24    8.06    11.19
+     2     97.85 1218.11    1216.73  20.01   1.24   -4.89    12.43
+     3     87.00 1000.12    1000.35  20.01   1.23    3.26    11.50
+Distancia total: 3946.9 m sin baro, 3950.5 m con baro; sin ZUPT la velocidad final queda en 3.29 m/s
+--- Viaje metro_3 (458.3 s) ---
+Sesgo del giroscopio medido en los primeros 10.0 s: [ 0.499 -0.298  0.199] °/s (se resta)
+Paradas (ZUPT) segun eventos.csv (pares salida/llegada)
+Direccion 'adelante' (primer arranque) en ejes del dispositivo: [ 0.984 -0.18  -0.005]
+Sin referencia (estaciones.csv / viajes.csv vacios para esta sesion): no se calcula error de distancia
+ tramo  duracion    dist  dist_baro  v_max  a_max  subida  v_media
+     0     87.00  999.95    1003.11  20.08   1.22   -3.55    11.53
+     1     97.85 1217.89    1219.75  20.06   1.24    5.14    12.46
+     2     83.46  929.15     921.77  19.85   1.23   -8.10    11.04
+     3     77.00  799.53     797.46  19.97   1.26   -0.19    10.36
+Distancia total: 3946.5 m sin baro, 3942.1 m con baro; sin ZUPT la velocidad final queda en -2.62 m/s
+--- Dispersion de la distancia de cada tramo entre viajes (con barometro) ---
+AVISO: sin viajes.csv los tramos se emparejan por numero; vale solo si todos los viajes van en el mismo sentido y desde la misma estacion
+         dist                  dist_baro                 
+        count     mean     std     count     mean     std
+tramo                                                    
+tramo 0     3   866.69  115.41         3   866.51  118.31
+tramo 1     3  1024.84  167.19         3  1025.82  168.03
+tramo 2     3  1122.34  167.31         3  1118.52  170.39
+tramo 3     3   932.86  115.47         3   933.70  117.99

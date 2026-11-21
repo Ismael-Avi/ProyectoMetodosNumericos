@@ -1,0 +1,19 @@
+{
+  "formato_version": 0,
+  "firmware_version": "0.1",
+  "chip_whoami": "0x70",
+  "tiene_magnetometro": false,
+  "fs_imu_nominal_hz": 200,
+  "fs_baro_nominal_hz": 25,
+  "accel_rango_g": 4,
+  "gyro_rango_dps": 500,
+  "mpu_dlpf_cfg": 3,
+  "mpu_a_dlpf_cfg": 3,
+  "bmp280_osrs_t": 1,
+  "bmp280_osrs_p": 8,
+  "bmp280_filtro_iir": 0,
+  "bmp280_calib": {"dig_T1": 27594, "dig_T2": 25520, "dig_T3": 50,
+                   "dig_P1": 37532, "dig_P2": -10596, "dig_P3": 3024, "dig_P4": 7500,
+                   "dig_P5": -38, "dig_P6": -7, "dig_P7": 15500, "dig_P8": -14600, "dig_P9": 6000},
+  "notas": "Sin reloj de tiempo real: carpetas numeradas (sesion_NNN). Magnetometro no disponible (MPU-6500): mx,my,mz vacios. t_us tomado justo antes de leer el sensor."
+}

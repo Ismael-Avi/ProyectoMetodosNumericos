@@ -1,0 +1,16 @@
+=== Reposo: sesion_002 (142.4 s) ===
+Detector: quieto el 98.3 % del tiempo (ventanas de 0.5 s)
+  EN MOVIMIENTO de 18.0 s a 18.5 s
+  EN MOVIMIENTO de 76.5 s a 77.0 s
+  EN MOVIMIENTO de 79.0 s a 79.5 s
+  EN MOVIMIENTO de 105.0 s a 105.5 s
+  EN MOVIMIENTO de 142.0 s a 142.4 s
+eje | media acel (m/s²) | ruido acel (m/s²) | sesgo giro (°/s) | ruido giro (°/s)
+  x |    0.5251 |   0.0168 |   -4.496 |  0.0608
+  y |   -0.0930 |   0.0156 |   -1.793 |  0.0637
+  z |   10.0993 |   0.0204 |   -0.212 |  0.0642
+|a| medio 10.1134 m/s², g Quito 9.77 -> diferencia +0.3434 m/s² (error de escala/sesgo; se corrige con 'caras')
+Sesgo del giroscopio en el primer minuto quieto [-4.495 -1.791 -0.215] °/s, en el ultimo [-4.497 -1.796 -0.211] °/s
+Prediccion: con ruido 0.0176 m/s² la velocidad hace un paseo aleatorio de 0.0096 m/s en 60 s y 0.0305 m/s en 10 min
+Prediccion: un sesgo de giroscopio de 4.496 °/s sin restar gira el rumbo 269.8° en 1 min
+Presion media 73271.9 Pa (desv. 2.81 Pa), tendencia -101.8 Pa/h; temperatura 23.03 a 23.28 °C
