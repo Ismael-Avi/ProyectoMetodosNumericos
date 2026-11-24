@@ -6,28 +6,33 @@ usa `navegacion.py`. Las sesiones de `simulados/` las genera el simulador, solo 
 el código y no se suben a git.
 
 Los números de la tabla salen de `python navegacion.py verificar datos/<sesion>` (corrida del
-23/11/2026). La orientación sale de `python navegacion.py reposo` (inclinación respecto al eje más
+24/11/2026). La inclinación sale de `python navegacion.py reposo` y `caras` (ángulo respecto al eje más
 cercano, sin calibrar).
 
 ## Sesiones
 
 | Carpeta | Fecha y hora | Experimento | Duración | Muestras IMU | Muestras barómetro | Perdidas (IMU / baro) | Frecuencia real IMU (inicio / final) | Frecuencia real baro (inicio / final) | Alimentación | Orientación |
 |---|---|---|---|---|---|---|---|---|---|---|
-| `sesion_002/` | TODO: completar (el ESP32 no tiene reloj) | reposo corto (prueba) | 142,4 s (2,4 min) | 28 483 | 3 561 | 0 / 0 | 200,000 / 200,000 Hz | 25,000 / 25,000 Hz | TODO: completar | eje z hacia arriba, inclinada 3,0°. Superficie: TODO: completar |
+| `sesion_002/` | 21/11/2026, hora: TODO | reposo corto, primera prueba del firmware | 142,4 s (2,4 min) | 28 483 | 3 561 | 0 / 0 | 200,000 / 200,000 Hz | 25,000 / 25,000 Hz | USB de la laptop | sobre una mesa, eje z hacia arriba, inclinada 3,0° |
 | `reposo_90min_2026-11-21_1915-2049/` | 21/11/2026, 19:15 a 20:49 | reposo largo (90 min) | 5694,3 s (94,9 min) | 1 138 860 | 142 358 | 0 / 0 | 200,000 / 200,000 Hz | 25,000 / 25,000 Hz | power bank | sobre una mesa, eje z hacia arriba, protoboard inclinada 9,2° |
+| `caras_2026-11-24/` | 24/11/2026, hora: TODO | seis caras + 8 posiciones inclinadas (**calibración oficial**) | 746,7 s (12,4 min) | 149 332 | 18 667 | 0 / 0 | 200,000 / 200,000 Hz | 25,000 / 25,000 Hz | cargador de pared | protoboard fijada dentro de una caja; seis caras y 8 posiciones inclinadas de 5,2° a 22,3° |
 
 Otros datos de `verificar`:
 
 - `sesion_002`: periodo medio del IMU 5000,0 µs, jitter 1,3 µs (mín. 4993, máx. 5007 µs). Sin
-  pulsaciones de botón. El detector marca movimiento en 18,0; 76,5; 79,0; 105,0 y 142,0 s
-  (ventanas de 0,5 s). TODO: anotar qué pasó en esos instantes. La carpeta conserva el nombre que
-  le puso el firmware.
+  pulsaciones de botón. Fue la primera prueba del firmware. El detector marca movimiento en 18,0;
+  76,5; 79,0; 105,0 y 142,0 s (ventanas de 0,5 s). TODO: anotar qué pasó en esos instantes. La
+  carpeta conserva el nombre que le puso el firmware.
 - `reposo_90min_2026-11-21_1915-2049`: periodo medio del IMU 5000,0 µs, jitter 0,8 µs (mín. 4993,
   máx. 5007 µs). Cumple los dos requisitos del enunciado: ≥ 100 Hz y 90 min sin pérdidas.
   `eventos.csv` tiene 3 pulsaciones: en 3,2 s, 5686,2 s y 5686,6 s (tiempo desde la primera
   muestra del IMU). La tercera está a 0,40 s de la segunda: es un rebote del pulsador y
   `navegacion.py` la ignora. La carpeta se renombró a mano con la fecha y la hora de la bitácora.
   TODO: anotar el nombre `sesion_NNN` original que le puso el firmware.
+- `caras_2026-11-24`: periodo medio del IMU 5000,0 µs, jitter 1,1 µs (mín. 4994, máx. 5006 µs). Sin
+  pulsaciones (no se usó el pulsador). `caras` encuentra 14 tramos quietos: las 6 caras y 8
+  posiciones inclinadas. La carpeta se renombró a mano con la fecha. TODO: anotar el nombre
+  `sesion_NNN` original y la hora.
 
 Los archivos que vienen de la microSD tienen fecha de modificación 01/01/1980, porque el ESP32 no
 sabe la fecha. La fecha y la hora reales se anotan en `../bitacora.md`.
@@ -61,7 +66,7 @@ encender.
 | `notas` | texto | aclaraciones del firmware |
 
 `bmp280_calib` tiene los 12 coeficientes que el firmware lee de los registros 0x88 a 0x9F del BMP280
-(little-endian). Hacen falta para la fórmula de compensación. En las dos sesiones reales son los
+(little-endian). Hacen falta para la fórmula de compensación. En las tres sesiones reales son los
 mismos, porque es el mismo chip:
 
 | Coeficiente | Tipo | Valor |

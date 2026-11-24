@@ -16,7 +16,8 @@ Rutas relativas a `proyecto_simple/`:
 | Programa | [`navegacion.py`](navegacion.py), explicado en [`EXPLICACION.md`](EXPLICACION.md) |
 | Datos crudos | [`datos/`](datos/): una carpeta por sesión real (`meta.json`, `imu.csv`, `baro.csv`, `eventos.csv`) |
 | Descripción de los datos | [`datos/LEEME.md`](datos/LEEME.md): tabla de sesiones, formato de cada archivo, conversión a unidades y configuración del sensor |
-| Resultados | [`resultados/`](resultados/): figuras y reportes de cada comando |
+| Resultados del avance | [`RESULTADOS_AVANCE.md`](RESULTADOS_AVANCE.md): resumen para el docente (reposo y seis caras con datos reales; ascensor pendiente) |
+| Resultados | [`resultados/`](resultados/): figuras y reportes de las sesiones reales. Los de sesiones simuladas están aparte, en [`resultados/simulados/`](resultados/simulados/) |
 | Fotos del montaje | [`fotos/`](fotos/) (TODO: subir las fotos) |
 
 ## Instalar
@@ -32,16 +33,20 @@ Se probó con Python 3.14, numpy 2.5, pandas 3.1 y matplotlib 3.11. No hace falt
 ```
 navegacion.py            todo el procesamiento
 firmware/registrador_v01 firmware del dispositivo (copia sin cambios del que ya se probó)
-datos/sesion_NNN/        sesiones reales: meta.json, imu.csv, baro.csv, eventos.csv
+datos/<sesion>/          sesiones reales: meta.json, imu.csv, baro.csv, eventos.csv
+                         (sesion_002, reposo_90min_2026-11-21_1915-2049, caras_2026-11-24)
 datos/LEEME.md           descripción de las sesiones y del formato de los archivos
 datos/simulados/         sesiones simuladas, solo para probar el código (no se suben a git)
 datos/pisos.csv          altura real de cada piso (flexómetro)       -> VACÍO, falta medir
 datos/estaciones.csv     estaciones, coordenadas y largo de cada tramo -> VACÍO, falta llenar
 datos/viajes.csv         en qué estación empezó cada viaje y en qué sentido -> VACÍO
-resultados/              figuras (.png), reportes (.txt) y calibracion.json (solo de una sesión real)
-resultados/simulados/    calibracion_simulada.json: la de la sesión simulada de caras, no se usa
+resultados/              figuras (.png) y reportes (.txt) de las sesiones reales, y calibracion.json
+                         (calibración oficial, de caras_2026-11-24)
+resultados/simulados/    resultados de las sesiones simuladas (reposo, caras, ascensor, metro) y
+                         calibracion_simulada.json, que no se usa
 bitacora.csv             una fila por cada comando ejecutado
 bitacora.md              bitácora escrita: experimentos, problemas, decisiones, uso de IA
+RESULTADOS_AVANCE.md     resumen de resultados del avance, para el docente
 fotos/                   fotos del montaje
 presentacion/            presentación de la entrega
 ```
@@ -59,10 +64,10 @@ Se corren desde la carpeta `proyecto_simple/`:
 |---|---|---|
 | `verificar` | muestras perdidas, frecuencia real al inicio y al final, jitter, gráfica de señales | `python navegacion.py verificar datos/sesion_002` |
 | `reposo` | sesgo y ruido de cada eje, detector quieto / en movimiento, inclinación, deriva por bloques de 10 min (giroscopio, acelerómetro, presión, temperatura) con figura `*_deriva.png` | `python navegacion.py reposo datos/sesion_002` |
-| `caras` | calibración de seis caras; guarda `resultados/calibracion.json` (si la sesión es simulada, guarda `resultados/simulados/calibracion_simulada.json`, que ningún comando usa). Además muestra \|g\| calibrado en cada tramo quieto que no se usó (posiciones inclinadas): prueba de que \|g\| no cambia al girar | `python navegacion.py caras datos/simulados/caras` |
+| `caras` | calibración de seis caras; guarda `resultados/calibracion.json` (si la sesión es simulada, guarda `resultados/simulados/calibracion_simulada.json`, que ningún comando usa). Además muestra \|g\| calibrado en cada tramo quieto que no se usó (posiciones inclinadas): prueba de que \|g\| no cambia al girar | `python navegacion.py caras datos/caras_2026-11-24` |
 | `metodos` | prueba del BMP280 y de los métodos numéricos contra numpy y contra soluciones exactas | `python navegacion.py metodos` |
-| `ascensor` | altura y velocidad con dos métodos, ZUPT, barómetro, fusión, cruces de piso, errores | `python navegacion.py ascensor datos/simulados/ascensor` |
-| `metro` | rumbo, velocidad, distancia por tramo, trayectoria y dispersión entre viajes | `python navegacion.py metro datos/simulados/metro_1 datos/simulados/metro_2` |
+| `ascensor` | altura y velocidad con dos métodos, ZUPT, barómetro, fusión, cruces de piso, errores. **Por ahora solo probado con datos simulados** | `python navegacion.py ascensor datos/simulados/ascensor` |
+| `metro` | rumbo, velocidad, distancia por tramo, trayectoria y dispersión entre viajes. **Por ahora solo probado con datos simulados** | `python navegacion.py metro datos/simulados/metro_1 datos/simulados/metro_2` |
 
 **Opciones** (sirven con cualquier comando que lee una sesión):
 
@@ -84,6 +89,21 @@ registro). Las pulsaciones a menos de 1 s de la anterior se ignoran (rebote del 
 Orden recomendado: `verificar` → `reposo` → `caras` (una vez) → `ascensor` / `metro`.
 `ascensor` y `metro` usan solo `resultados/calibracion.json`, que debe venir de una sesión real de
 `caras`. Si no existe, avisan y siguen sin calibrar (sesgo 0, escala 1).
+
+## Resultados con datos reales
+
+Hasta ahora hay tres sesiones reales: dos de reposo (`sesion_002`, 142 s, y
+`reposo_90min_2026-11-21_1915-2049`, 94,9 min) y una de seis caras (`caras_2026-11-24`). El resumen
+está en [`RESULTADOS_AVANCE.md`](RESULTADOS_AVANCE.md). Los números principales:
+
+- 0 muestras perdidas y 200,000 Hz al inicio y al final en las tres sesiones, incluida la de 95 min.
+- Sesgo del giroscopio ~(-4,5; -1,8; -0,2) °/s; ruido del acelerómetro 0,013 a 0,018 m/s².
+- Calibración de seis caras: |g| en 8 posiciones que no se usaron para calibrar pasa de 9,661–10,127
+  a 9,770–9,799 m/s².
+
+**El ascensor y el metro todavía no se han grabado.** Todo lo que el programa calcula para ellos
+(`ascensor`, `metro`) se probó solo con sesiones simuladas, y sus resultados están en
+`resultados/simulados/`.
 
 ## Cómo hay que grabar (lo que el programa supone)
 
@@ -121,7 +141,7 @@ Parámetros elegidos por nosotros (no son constantes físicas):
 
 | Parámetro | Valor | Por qué |
 |---|---|---|
-| `UMBRAL_ACC`, `UMBRAL_GIRO` | 0,06 m/s², 0,3 °/s | desviación estándar en ventanas de 0,5 s. En reposo real (sesion_002) el ruido es ~0,016 m/s² y ~0,065 °/s; un golpe en la mesa da ~0,06–0,08 |
+| `UMBRAL_ACC`, `UMBRAL_GIRO` | 0,06 m/s², 0,3 °/s | desviación estándar en ventanas de 0,5 s. En reposo real el ruido es 0,013–0,018 m/s² y 0,054–0,064 °/s (sesion_002 y reposo de 90 min); un golpe en la mesa da ~0,06–0,08 |
 | `REPOSO_INICIAL_S` | 10 s | reposo al inicio de cada sesión |
 | `REBOTE_BOTON_S` | 1 s | dos pulsaciones más juntas que esto cuentan como una (rebote; el firmware solo filtra 200 ms) |
 | `BLOQUE_DERIVA_S` | 600 s | tamaño de los bloques para estudiar la deriva en `reposo` |

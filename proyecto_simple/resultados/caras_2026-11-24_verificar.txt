@@ -1,0 +1,11 @@
+=== Verificacion de caras_2026-11-24 ===
+chip WHO_AM_I 0x70, firmware 0.1, ±4 g, ±500 °/s, duracion 746.7 s (12.4 min), registro completo
+IMU: 149332 muestras, perdidas 0 (0.0000 %), seq repetidos o hacia atras: 0, t_us siempre creciente: True
+  frecuencia real: inicio 200.000 Hz, final 200.000 Hz (nominal 200 Hz, ventanas de 60 s)
+  periodo: medio 5000.0 us, jitter (desv. est.) 1.1 us, minimo 4994 us, maximo 5006 us
+Barometro: 18667 muestras, perdidas 0 (0.0000 %), seq repetidos o hacia atras: 0, t_us siempre creciente: True
+  frecuencia real: inicio 25.000 Hz, final 25.000 Hz (nominal 25 Hz, ventanas de 60 s)
+  periodo: medio 40000.0 us, jitter (desv. est.) 1.4 us, minimo 39848 us, maximo 40014 us
+Requisito >= 100 Hz: cumple; requisito 90 min sin perdidas: no (registro mas corto o con perdidas)
+Eventos del boton: 0 en [] s (se ignoraron 0 pulsaciones a menos de 1.0 s de la anterior: rebote)
+|a| medio 9.850 m/s² (g Quito 9.77), giroscopio medio [-4.178 -1.685  0.63 ] °/s, presion media 73082.9 Pa, temperatura media 25.69 °C
