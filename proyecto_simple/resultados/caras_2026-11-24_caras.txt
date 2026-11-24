@@ -3,13 +3,13 @@ Tramos quietos: 14; caras distintas 6 ['x+', 'x-', 'y+', 'y-', 'z+', 'z-']; tram
 eje x: a+ = 9.8685, a- = -9.6552 -> sesgo +0.1067 m/s², escala 0.99916
 eje y: a+ = 9.7586, a- = -9.7942 -> sesgo -0.0178 m/s², escala 1.00065
 eje z: a+ = 10.1023, a- = -9.6543 -> sesgo +0.2240 m/s², escala 1.01109
-cara | |g| antes (m/s²) | error antes | |g| despues | error despues   (despues = 9.77 por construccion)
-  x+ | 9.8794 | +0.1094 | 9.7891 | +0.0191
-  x- | 9.6886 | -0.0814 | 9.7895 | +0.0195
-  y+ | 9.7923 | +0.0223 | 9.7901 | +0.0201
-  y- | 9.8045 | +0.0345 | 9.7817 | +0.0117
-  z+ | 10.1208 | +0.3508 | 9.7832 | +0.0132
-  z- | 9.6672 | -0.1028 | 9.7871 | +0.0171
+cara | inclinacion vs eje (°) | |g| antes (m/s²) | error antes | |g| despues | error despues   (despues ~9.77: se calibro con estas caras)
+  x+ |   3.6 | 9.8794 | +0.1094 | 9.7891 | +0.0191
+  x- |   3.6 | 9.6886 | -0.0814 | 9.7895 | +0.0195
+  y+ |   3.7 | 9.7923 | +0.0223 | 9.7901 | +0.0201
+  y- |   2.8 | 9.8045 | +0.0345 | 9.7817 | +0.0117
+  z+ |   3.0 | 10.1208 | +0.3508 | 9.7832 | +0.0132
+  z- |   3.4 | 9.6672 | -0.1028 | 9.7871 | +0.0171
 Sesgo del giroscopio (promedio de las caras, solo informativo): [-4.503 -1.766 -0.204] °/s; variacion entre caras [0.005 0.005 0.008] °/s
 Guardado en resultados/calibracion.json
 --- Prueba independiente: tramos quietos que no se usaron para calibrar (minimo 3 s) ---

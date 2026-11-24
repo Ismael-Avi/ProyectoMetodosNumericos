@@ -489,11 +489,13 @@ def comando_caras(carpeta):
             sesgo[i] = (mas + menos) / 2
             escala[i] = (mas - menos) / (2 * G)
             decir(r, f"eje {e}: a+ = {mas:.4f}, a- = {menos:.4f} -> sesgo {sesgo[i]:+.4f} m/s², escala {escala[i]:.5f}")
-        decir(r, "cara | |g| antes (m/s²) | error antes | |g| despues | error despues   (despues = 9.77 por construccion)")
+        decir(r, "cara | inclinacion vs eje (°) | |g| antes (m/s²) | error antes | |g| despues | error despues   (despues ~9.77: se calibro con estas caras)")
         for clave in ["x+", "x-", "y+", "y-", "z+", "z-"]:
             antes = np.linalg.norm(quietos[caras[clave]][2])
-            despues = np.linalg.norm((quietos[caras[clave]][2] - sesgo) / escala)
-            decir(r, f"  {clave} | {antes:.4f} | {antes - G:+.4f} | {despues:.4f} | {despues - G:+.4f}")
+            m = (quietos[caras[clave]][2] - sesgo) / escala
+            despues = np.linalg.norm(m)
+            inclinacion = np.degrees(np.arccos(np.abs(m).max() / despues))
+            decir(r, f"  {clave} | {inclinacion:5.1f} | {antes:.4f} | {antes - G:+.4f} | {despues:.4f} | {despues - G:+.4f}")
         giro = np.degrees(np.array([quietos[k][3] for k in caras.values()]))
         decir(r, f"Sesgo del giroscopio (promedio de las caras, solo informativo): {np.round(giro.mean(axis=0), 3)} °/s; "
                  f"variacion entre caras {np.round(giro.std(axis=0), 3)} °/s")
@@ -522,6 +524,20 @@ def comando_caras(carpeta):
         decir(r, f"Variacion de |g| entre tramos (desv. est.): antes {antes.std():.4f} m/s², calibrado {despues.std():.4f} m/s²; "
                  f"error maximo calibrado {np.abs(despues - G).max():.4f} m/s²")
         fila["resultado"] += f"; {len(extras)} tramos extra, error max |g| calibrado {np.abs(despues - G).max():.4f} m/s²"
+    # Figura: |g| antes y despues de calibrar en cada tramo quieto (caras y extras), en orden de tiempo.
+    nombres = {k: f"extra {j}" for j, k in enumerate(extras)}
+    if not faltan:
+        nombres.update({k: f"cara {c}" for c, k in caras.items()})
+    x = np.arange(len(quietos))
+    fig, ax = plt.subplots(figsize=(10, 5))
+    ax.plot(x, [np.linalg.norm(q_[2]) for q_ in quietos], "o", color="tab:red", label="antes de calibrar")
+    ax.plot(x, [np.linalg.norm((q_[2] - sesgo) / escala) for q_ in quietos], "s", color="tab:green", label="calibrado")
+    ax.axhline(G, color="k", ls="--", lw=1, label=f"g Quito = {G}")
+    ax.set_xticks(x, [nombres[k] for k in x], rotation=45)
+    ax.set(ylabel="|g| (m/s²)", title=f"|g| en cada tramo quieto: {s['nombre']}")
+    ax.grid(alpha=0.3)
+    ax.legend()
+    guardar_figura(fig, f"{s['nombre']}_caras.png")
     guardar_reporte(f"{s['nombre']}_caras.txt", r)
     agregar_bitacora(fila)
 

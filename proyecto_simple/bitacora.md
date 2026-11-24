@@ -54,8 +54,8 @@ Como no hay pulsaciones, `--botones` no recorta nada y solo se quitan 5 s a cada
 
 **Observaciones:** fue la primera sesión real que se procesó. Con ella se midió el ruido real que
 se usa para fijar los umbrales del detector de quietud (`UMBRAL_ACC`, `UMBRAL_GIRO`) y se vio que el
-giroscopio tiene unos -4,5 °/s de sesgo en x. TODO: anotar qué pasó en los instantes en que el
-detector marca movimiento (¿golpes en la mesa?).
+giroscopio tiene unos -4,5 °/s de sesgo en x. No sabemos qué pasó en los instantes en que el
+detector marca movimiento; probablemente golpes o movimiento de la mesa.
 
 ### 2.2 `reposo_90min_2026-11-21_1915-2049`: reposo largo
 
@@ -158,7 +158,9 @@ python navegacion.py caras     datos/caras_2026-11-24
   | z | 10,1023 | −9,6543 | +0,2240 | 1,01109 |
 
 - |g| en las seis caras: de 9,667 a 10,121 m/s² sin calibrar; de 9,782 a 9,790 m/s² calibrado.
-  (No da 9,77 exacto porque las caras no quedan perfectamente verticales.)
+  No da 9,77 exacto porque las caras quedaron inclinadas 2,8° a 3,7° (calibrado; 2,6° a 4,8° sin
+  calibrar). En cada cara, |g| calibrado coincide con 9,77/cos θ: por ejemplo x+ con 3,6° da
+  9,7893 (medido 9,7891) e y− con 2,8° da 9,7817 (medido 9,7817).
 - **Prueba independiente**, con las 8 posiciones inclinadas que no se usaron para calibrar: |g| sin
   calibrar va de 9,661 a 10,127 m/s²; calibrado, de 9,770 a 9,799 m/s². La desviación estándar
   entre posiciones baja de 0,1693 a 0,0092 m/s² (18 veces menor). Error máximo calibrado:
@@ -169,16 +171,18 @@ python navegacion.py caras     datos/caras_2026-11-24
   los números de `reposo`): |g| = 9,776 m/s² en `sesion_002` (antes 10,113) y 9,755 m/s² en el
   reposo de 90 min (antes 10,099).
 
-**Figuras y reportes:** `resultados/caras_2026-11-24_senales.png` (se ven las seis caras como
+**Figuras y reportes:** `resultados/caras_2026-11-24_caras.png` (|g| antes y después de calibrar
+en cada tramo quieto, con la línea de 9,77), `resultados/caras_2026-11-24_senales.png` (se ven las seis caras como
 escalones de ±9,8 m/s² en un eje y después las 8 posiciones inclinadas),
 `resultados/caras_2026-11-24_caras.txt`, `resultados/caras_2026-11-24_verificar.txt` y
-`resultados/calibracion.json`. El comando `caras` no genera figura propia.
+`resultados/calibracion.json`.
 
 **Observaciones:**
 
 - Las 8 posiciones calibradas quedan todas un poco por encima de 9,77 (entre −0,0005 y +0,0286
-  m/s², +0,016 en promedio). TODO: discutir la causa (caras no perfectamente verticales al
-  calibrar, ejes no perpendiculares, o el valor de g usado).
+  m/s², +0,016 en promedio). Causa: en las seis caras el sensor quedó inclinado: 2,6° a 4,8° sin calibrar (2,8° a 3,7° ya calibrado). Así el eje principal no mide g sino g·cos θ, la escala sale un poco baja (por un factor ~cos θ) y todo |g| calibrado queda un poco alto, cerca de 9,77/cos θ. Con el promedio de ~3,3° se predice 9,77·(1/cos θ − 1) ≈ 9,77·(1 − cos θ) ≈ 0,017 m/s², igual a lo
+  observado. Con ~4° serían 0,024 m/s². Para que la escala salga bien, las caras tienen que quedar
+  más verticales.
 - Dentro de la caja, la temperatura del BMP280 subió de 24,6 a 26,0 °C durante los 12 min, y la
   presión subió ~20 Pa (de 73 074,6 a 73 094,1 Pa, promedio del primer y del último minuto).
 - **Aprendizaje de los intentos anteriores** (no se guardaron): en el primero faltó la cara y− y

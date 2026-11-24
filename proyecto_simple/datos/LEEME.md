@@ -21,14 +21,14 @@ Otros datos de `verificar`:
 
 - `sesion_002`: periodo medio del IMU 5000,0 µs, jitter 1,3 µs (mín. 4993, máx. 5007 µs). Sin
   pulsaciones de botón. Fue la primera prueba del firmware. El detector marca movimiento en 18,0;
-  76,5; 79,0; 105,0 y 142,0 s (ventanas de 0,5 s). TODO: anotar qué pasó en esos instantes. La
-  carpeta conserva el nombre que le puso el firmware.
+  76,5; 79,0; 105,0 y 142,0 s (ventanas de 0,5 s). No sabemos qué fue; probablemente golpes o
+  movimiento de la mesa. La carpeta conserva el nombre que le puso el firmware.
 - `reposo_90min_2026-11-21_1915-2049`: periodo medio del IMU 5000,0 µs, jitter 0,8 µs (mín. 4993,
   máx. 5007 µs). Cumple los dos requisitos del enunciado: ≥ 100 Hz y 90 min sin pérdidas.
   `eventos.csv` tiene 3 pulsaciones: en 3,2 s, 5686,2 s y 5686,6 s (tiempo desde la primera
   muestra del IMU). La tercera está a 0,40 s de la segunda: es un rebote del pulsador y
   `navegacion.py` la ignora. La carpeta se renombró a mano con la fecha y la hora de la bitácora.
-  TODO: anotar el nombre `sesion_NNN` original que le puso el firmware.
+  En la tarjeta se llamaba `sesion_001`.
 - `caras_2026-11-24`: periodo medio del IMU 5000,0 µs, jitter 1,1 µs (mín. 4994, máx. 5006 µs). Sin
   pulsaciones (no se usó el pulsador). `caras` encuentra 14 tramos quietos: las 6 caras y 8
   posiciones inclinadas. La carpeta se renombró a mano con la fecha. TODO: anotar el nombre

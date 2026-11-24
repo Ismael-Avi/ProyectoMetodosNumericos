@@ -125,9 +125,14 @@ caras, para cada eje:
 
 Corregir: `a_cal = (a − sesgo)/escala`. La tabla muestra |g| antes y después en cada cara. Ojo:
 después da casi 9,77 en esas mismas caras porque se calibró con ellas, así que esa tabla no prueba
-nada. (Con la sesión real `caras_2026-11-24` da 9,782 a 9,790 y no 9,77 exacto, porque las caras no
-quedan perfectamente verticales: la calibración usa solo el eje que tiene la gravedad, y |g| suma
-además lo poco que cae en los otros dos ejes.)
+nada. (Con la sesión real `caras_2026-11-24` da 9,782 a 9,790 y no 9,77 exacto. Las caras quedaron
+inclinadas 2,8° a 3,7°, que es la columna "inclinación" de la tabla. Con una cara inclinada θ, el eje
+principal mide g·cos θ en vez de g, la escala sale baja por un factor ~cos θ y |g| calibrado queda
+en ~9,77/cos θ. En x+, con 3,6°, eso da 9,7893, y se midió 9,7891. Por eso las posiciones de prueba
+también quedan ~0,016 m/s² por encima de 9,77.)
+
+La figura `*_caras.png` muestra |g| antes (rojo) y después (verde) de calibrar en cada tramo quieto,
+caras y extras, con una línea en 9,77.
 
 **Prueba independiente:** el comando guarda *todos* los tramos quietos de más de 3 s. Los que no se
 usaron como cara (posiciones inclinadas, o una cara repetida) se revisan aparte. En cada uno se

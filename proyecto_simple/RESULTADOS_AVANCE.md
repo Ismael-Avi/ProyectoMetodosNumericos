@@ -23,8 +23,8 @@ de la laptop.
 **Figura:** `resultados/sesion_002_reposo.png`.
 **Qué mirar:** |a| es una banda plana alrededor de 10,1 m/s², por encima de la línea de 9,77: ese
 desfase es el error del acelerómetro que corrige la calibración. Las franjas naranjas (18; 76,5;
-79 y 105 s) son los únicos instantes en que el detector vio movimiento: picos cortos (TODO: anotar
-qué fueron, por ejemplo un golpe en la mesa). |ω| no está en 0 sino en ~4,8 °/s: es el sesgo del giroscopio.
+79 y 105 s) son los únicos instantes en que el detector vio movimiento: picos cortos; no sabemos qué
+fueron, probablemente golpes o movimiento de la mesa. |ω| no está en 0 sino en ~4,8 °/s: es el sesgo del giroscopio.
 
 ## 2. Reposo largo (`reposo_90min_2026-11-21_1915-2049`, 21/11/2026, 19:15–20:49)
 
@@ -77,8 +77,20 @@ En las 8 posiciones de prueba:
 | \|g\| (m/s²) | 9,661 a 10,127 | 9,770 a 9,799 |
 | Variación entre posiciones (desv. est.) | 0,1693 m/s² | 0,0092 m/s² (18 veces menor) |
 
-**Figura:** `resultados/caras_2026-11-24_senales.png` (los números están en
+**Figura principal:** `resultados/caras_2026-11-24_caras.png` (los números están en
 `resultados/caras_2026-11-24_caras.txt`).
+**Qué mirar:** cada columna es un tramo quieto: primero las seis caras, después las 8 posiciones
+inclinadas ("extra"). Los círculos rojos (sin calibrar) están dispersos entre 9,66 y 10,13 m/s²;
+los cuadrados verdes (calibrado) quedan todos juntos, justo encima de la línea de 9,77. Lo
+importante son las columnas "extra", que no se usaron para calibrar.
+
+**Por qué los verdes quedan un poco arriba de 9,77 (+0,016 m/s² en promedio):** en las seis caras
+el sensor quedó inclinado 2,6° a 4,8° (sin calibrar; 2,8° a 3,7° ya calibrado). El eje principal
+no mide g sino g·cos θ, así que la escala sale un poco baja y |g| calibrado queda un poco alto:
+9,77·(1 − cos θ) ≈ 0,017 m/s² con θ ≈ 3,3°, y 0,024 m/s² con 4°. Se confirma cara por cara: en x+
+(3,6°) se predice 9,7893 y se mide 9,7891.
+
+**Figura de apoyo:** `resultados/caras_2026-11-24_senales.png`.
 **Qué mirar:** en la gráfica de aceleración, las seis caras son seis escalones de ~±9,8 m/s², cada
 uno en un eje distinto (x, y, z hacia arriba y hacia abajo). Después de ~410 s vienen las 8
 posiciones inclinadas: la gravedad se reparte entre dos o tres ejes. Los picos del giroscopio son
@@ -106,9 +118,8 @@ Chequeos que se cumplen con los datos reales:
     18 veces menor);
   - aplicando la misma calibración a los reposos del 21/11 (otro día, otro montaje) da 9,776 y
     9,755 m/s².
-- **Calibraciones reproducibles:** TODO. La idea es comprobar que los sesgos de dos calibraciones
-  distintas coinciden, pero solo se guardó una sesión de caras, así que no se puede verificar con
-  los archivos. Hace falta grabar otra sesión de caras y comparar.
+- **Calibraciones reproducibles:** TODO. Falta comparar los sesgos y las escalas con los del segundo
+  intento de caras (`datos/caras_2026-11-24_intento2/`), que todavía no está en el repositorio.
 - **Métodos numéricos verificados:**
   - el BMP280 reproduce el ejemplo de la hoja de datos (25,08 °C y 100 653,27 Pa);
   - el rectángulo converge con orden 1 y el trapecio con orden 2 (`resultados/metodos_convergencia.png`:
