@@ -1,12 +1,20 @@
-fecha_proceso,comando,sesion,firmware,duracion_s,desplazamiento_m,vel_max_ms,acel_max_ms2,duracion_tramos_s,resultado,condiciones
-2026-11-21 11:02:32,metodos,-,,,,,,,"bmp280 OK; orden rect 1.00, trap 2.00",
-2026-11-21 11:02:36,verificar,sesion_002,0.1,142.4,,,,,perdidas imu=0 baro=0; fs=200.00 Hz,
-2026-11-21 11:02:40,reposo,sesion_002,0.1,142.4,,,,,quieto 98.3 %; ruido acel 0.0176 m/s²; sesgo giro [-4.496 -1.793 -0.212] °/s,
-2026-11-21 11:02:44,verificar,reposo,simulador,3600.0,,,,,perdidas imu=6 baro=6; fs=199.96 Hz,SIMULADO
-2026-11-21 11:02:48,reposo,reposo,simulador,3600.0,,,,,quieto 100.0 %; ruido acel 0.0300 m/s²; sesgo giro [ 0.497 -0.296  0.198] °/s,SIMULADO
-2026-11-21 11:02:51,caras,caras,simulador,385.0,,,,,sesgo [ 0.1502 -0.0994  0.2498] m/s²; escala [1.01    0.99199 1.01502],SIMULADO
-2026-11-21 11:02:57,ascensor,ascensor,simulador,460.2,15.57,1.51,1.10,13.2;10.9;12.8;10.9;12.8;10.0;17.1;10.9;10.0;15.2;11.3;12.8;14.7;10.8;13.2;15.2;10.9;12.8;17.1;10.0;10.0,RMS fusion 0.006 m vs barometro,SIMULADO
-2026-11-21 11:03:00,metro,metro_1,simulador,458.3,3941.0,20.24,1.24,77.0;83.5;97.9;87.0,4 tramos; giro total -25.5°,SIMULADO
-2026-11-21 11:03:00,metro,metro_2,simulador,458.3,3950.5,20.06,1.25,77.0;83.5;97.9;87.0,4 tramos; giro total -26.6°,SIMULADO
-2026-11-21 11:03:00,metro,metro_3,simulador,458.3,3942.1,20.08,1.26,87.0;97.9;83.5;77.0,4 tramos; giro total 25.5°,SIMULADO
-2026-11-21 11:34:32,caras,caras,simulador,385.0,,,,,sesgo [ 0.1502 -0.0994  0.2498] m/s²; escala [1.01    0.99199 1.01502],SIMULADO
+fecha_proceso,comando,sesion,firmware,duracion_s,recorte_s,desplazamiento_m,vel_max_ms,acel_max_ms2,duracion_tramos_s,resultado,condiciones
+2026-11-21 11:02:32,metodos,-,,,,,,,,"bmp280 OK; orden rect 1.00, trap 2.00",
+2026-11-21 11:02:36,verificar,sesion_002,0.1,142.4,,,,,,perdidas imu=0 baro=0; fs=200.00 Hz,
+2026-11-21 11:02:40,reposo,sesion_002,0.1,142.4,,,,,,quieto 98.3 %; ruido acel 0.0176 m/s²; sesgo giro [-4.496 -1.793 -0.212] °/s,
+2026-11-21 11:02:44,verificar,reposo,simulador,3600.0,,,,,,perdidas imu=6 baro=6; fs=199.96 Hz,SIMULADO
+2026-11-21 11:02:48,reposo,reposo,simulador,3600.0,,,,,,quieto 100.0 %; ruido acel 0.0300 m/s²; sesgo giro [ 0.497 -0.296  0.198] °/s,SIMULADO
+2026-11-21 11:02:51,caras,caras,simulador,385.0,,,,,,sesgo [ 0.1502 -0.0994  0.2498] m/s²; escala [1.01    0.99199 1.01502],SIMULADO
+2026-11-21 11:02:57,ascensor,ascensor,simulador,460.2,,15.57,1.51,1.10,13.2;10.9;12.8;10.9;12.8;10.0;17.1;10.9;10.0;15.2;11.3;12.8;14.7;10.8;13.2;15.2;10.9;12.8;17.1;10.0;10.0,RMS fusion 0.006 m vs barometro,SIMULADO
+2026-11-21 11:03:00,metro,metro_1,simulador,458.3,,3941.0,20.24,1.24,77.0;83.5;97.9;87.0,4 tramos; giro total -25.5°,SIMULADO
+2026-11-21 11:03:00,metro,metro_2,simulador,458.3,,3950.5,20.06,1.25,77.0;83.5;97.9;87.0,4 tramos; giro total -26.6°,SIMULADO
+2026-11-21 11:03:00,metro,metro_3,simulador,458.3,,3942.1,20.08,1.26,87.0;97.9;83.5;77.0,4 tramos; giro total 25.5°,SIMULADO
+2026-11-21 11:34:32,caras,caras,simulador,385.0,,,,,,sesgo [ 0.1502 -0.0994  0.2498] m/s²; escala [1.01    0.99199 1.01502],SIMULADO
+2026-11-23 12:46:15,verificar,reposo_90min_2026-11-21_1915-2049,0.1,5694.3,,,,,,perdidas imu=0 baro=0; fs=200.00 Hz,"REAL. Grabada el 21/11/2026, 19:15-20:49. Reposo sobre una mesa; protoboard inclinada ~9° (medido: 9.2°). Alimentada con power bank. Boton al inicio (s 3) y al final (s 5686); pulsacion doble al final por rebote del pulsador sin soldar (ignorada). Movimiento solo en los primeros 5 s y los ultimos 10 s."
+2026-11-23 12:46:24,reposo,reposo_90min_2026-11-21_1915-2049,0.1,5673.1,8.2-5681.2,,,,,"quieto 100.0 %; ruido acel 0.0130 m/s²; sesgo giro [-4.513 -1.823 -0.163] °/s; deriva 95 min: gx -4.452->-4.540 °/s, P +0.80 hPa, T -0.78 °C","REAL. Grabada el 21/11/2026, 19:15-20:49. Reposo sobre una mesa; protoboard inclinada ~9° (medido: 9.2°). Alimentada con power bank. Boton al inicio (s 3) y al final (s 5686); pulsacion doble al final por rebote del pulsador sin soldar (ignorada). Movimiento solo en los primeros 5 s y los ultimos 10 s."
+2026-11-23 19:05:24,verificar,sesion_002,0.1,142.4,,,,,,perdidas imu=0 baro=0; fs=200.00 Hz,
+2026-11-23 19:05:28,verificar,reposo_90min_2026-11-21_1915-2049,0.1,5694.3,,,,,,perdidas imu=0 baro=0; fs=200.00 Hz,
+2026-11-23 19:05:41,reposo,reposo_90min_2026-11-21_1915-2049,0.1,5673.1,8.2-5681.2,,,,,"quieto 100.0 %; ruido acel 0.0130 m/s²; sesgo giro [-4.513 -1.823 -0.163] °/s; deriva 95 min: gx -4.452->-4.540 °/s, P +0.80 hPa, T -0.78 °C",
+2026-11-23 19:05:43,reposo,sesion_002,0.1,142.4,,,,,,quieto 98.3 %; ruido acel 0.0176 m/s²; sesgo giro [-4.496 -1.793 -0.212] °/s,
+2026-11-23 19:08:30,metodos,-,,,,,,,,"bmp280 OK; orden rect 1.00, trap 2.00",
+2026-11-23 19:08:50,reposo,sesion_002,0.1,132.4,5.0-137.4,,,,,quieto 98.5 %; ruido acel 0.0177 m/s²; sesgo giro [-4.496 -1.794 -0.212] °/s,

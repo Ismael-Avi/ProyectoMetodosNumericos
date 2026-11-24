@@ -30,6 +30,9 @@ VENTANA_ARRANQUE_S = 5.0
 SUAVIZADO_BARO_S = 10.0
 VELOCIDAD_MIN_PENDIENTE = 1.0
 SENO_MAX = 0.1
+REBOTE_BOTON_S = 1.0
+BLOQUE_DERIVA_S = 600.0
+OPCIONES = {"botones": False, "recorte": 0.0}
 
 BMP280_EJEMPLO = {"dig_T1": 27504, "dig_T2": 26435, "dig_T3": -1000,
                   "dig_P1": 36477, "dig_P2": -10685, "dig_P3": 3024, "dig_P4": 2855,
@@ -45,7 +48,7 @@ CALIBRACION = os.path.join(RESULTADOS, "calibracion.json")
 PISOS = os.path.join(CARPETA, "datos", "pisos.csv")
 ESTACIONES = os.path.join(CARPETA, "datos", "estaciones.csv")
 VIAJES = os.path.join(CARPETA, "datos", "viajes.csv")
-COLUMNAS_BITACORA = ["fecha_proceso", "comando", "sesion", "firmware", "duracion_s", "desplazamiento_m",
+COLUMNAS_BITACORA = ["fecha_proceso", "comando", "sesion", "firmware", "duracion_s", "recorte_s", "desplazamiento_m",
                      "vel_max_ms", "acel_max_ms2", "duracion_tramos_s", "resultado", "condiciones"]
 
 USO = """Uso:
@@ -54,7 +57,10 @@ USO = """Uso:
   python navegacion.py caras     datos/sesion_NNN
   python navegacion.py metodos
   python navegacion.py ascensor  datos/sesion_NNN
-  python navegacion.py metro     datos/sesion_NNN [datos/sesion_MMM ...]"""
+  python navegacion.py metro     datos/sesion_NNN [datos/sesion_MMM ...]
+Opciones (para cualquier comando con sesion):
+  --botones      usar solo desde la primera hasta la ultima pulsacion del boton
+  --recorte N    quitar N segundos al inicio y al final (despues de --botones si se usan los dos)"""
 
 
 def bmp280(adc_T, adc_P, c):
@@ -95,10 +101,39 @@ def leer_sesion(carpeta):
     s["t_us_baro"] = baro["t_us"].to_numpy()
     s["t_baro"] = (s["t_us_baro"] - t0) / 1e6
     s["temp"], s["presion"] = bmp280(baro["adc_T"], baro["adc_P"], meta["bmp280_calib"])
-    s["eventos"] = (eventos["t_us"].to_numpy() - t0) / 1e6
+    ev = (eventos["t_us"].to_numpy() - t0) / 1e6
+    if len(ev) > 1:
+        ev = ev[np.concatenate([[True], np.diff(ev) > REBOTE_BOTON_S])]
+    s["eventos"] = ev
+    s["rebotes"] = len(eventos) - len(ev)
     if meta.get("firmware_version") == "simulador":
         print("AVISO: sesion SIMULADA (solo sirve para probar el codigo)")
+    return recortar(s)
+
+
+def recortar(s):
+    ini, fin = s["t"][0], s["t"][-1]
+    if OPCIONES["botones"] and len(s["eventos"]) >= 2:
+        ini, fin = s["eventos"][0], s["eventos"][-1]
+    ini, fin = ini + OPCIONES["recorte"], fin - OPCIONES["recorte"]
+    s["recorte"] = ""
+    if ini > s["t"][0] or fin < s["t"][-1]:
+        s["recorte"] = f"{ini:.1f}-{fin:.1f}"
+        m = (s["t"] >= ini) & (s["t"] <= fin)
+        mb = (s["t_baro"] >= ini) & (s["t_baro"] <= fin)
+        for k in ["seq", "t_us", "t", "acc", "giro"]:
+            s[k] = s[k][m]
+        for k in ["seq_baro", "t_us_baro", "t_baro", "temp", "presion"]:
+            s[k] = s[k][mb]
+        s["eventos"] = s["eventos"][(s["eventos"] >= ini) & (s["eventos"] <= fin)]
+    s["duracion"] = s["t"][-1] - s["t"][0]
     return s
+
+
+def texto_recorte(s):
+    if s["recorte"] == "":
+        return "registro completo"
+    return f"recortado: se usa de {s['recorte'].replace('-', ' a ')} s"
 
 
 def decir(r, texto):
@@ -137,7 +172,7 @@ def agregar_bitacora(fila):
 def fila_sesion(s, comando):
     simulado = s["meta"].get("firmware_version") == "simulador"
     return {"comando": comando, "sesion": s["nombre"], "firmware": s["meta"].get("firmware_version", ""),
-            "duracion_s": f"{s['t'][-1]:.1f}", "condiciones": "SIMULADO" if simulado else ""}
+            "duracion_s": f"{s['duracion']:.1f}", "recorte_s": s["recorte"], "condiciones": "SIMULADO" if simulado else ""}
 
 
 def rectangulo(t, y):
@@ -192,7 +227,7 @@ def mascara_movimiento(s):
 
 
 def reposo_inicial(s):
-    fin = REPOSO_INICIAL_S
+    fin = s["t"][0] + REPOSO_INICIAL_S
     if len(s["eventos"]) > 0:
         fin = min(fin, s["eventos"][0] - 1.0)
     return s["t"] < fin
@@ -270,13 +305,14 @@ def comando_verificar(carpeta):
     m = s["meta"]
     decir(r, f"=== Verificacion de {s['nombre']} ===")
     decir(r, f"chip WHO_AM_I {m.get('chip_whoami')}, firmware {m.get('firmware_version')}, "
-             f"±{m['accel_rango_g']} g, ±{m['gyro_rango_dps']} °/s, duracion {s['t'][-1]:.1f} s ({s['t'][-1] / 60:.1f} min)")
+             f"±{m['accel_rango_g']} g, ±{m['gyro_rango_dps']} °/s, duracion {s['duracion']:.1f} s ({s['duracion'] / 60:.1f} min), {texto_recorte(s)}")
     p1 = revisar_tiempos(r, "IMU", s["t_us"], s["seq"], m.get("fs_imu_nominal_hz"))
     p2 = revisar_tiempos(r, "Barometro", s["t_us_baro"], s["seq_baro"], m.get("fs_baro_nominal_hz"))
     fs = 1 / np.median(np.diff(s["t"]))
     decir(r, f"Requisito >= 100 Hz: {'cumple' if fs >= 100 else 'NO cumple'}; "
-             f"requisito 90 min sin perdidas: {'cumple' if s['t'][-1] >= 5400 and p1 == 0 else 'no (registro mas corto o con perdidas)'}")
-    decir(r, f"Eventos del boton: {len(s['eventos'])}")
+             f"requisito 90 min sin perdidas: {'cumple' if s['duracion'] >= 5400 and p1 == 0 else 'no (registro mas corto o con perdidas)'}")
+    decir(r, f"Eventos del boton: {len(s['eventos'])} en [{', '.join(f'{e:.1f}' for e in s['eventos'])}] s "
+             f"(se ignoraron {s['rebotes']} pulsaciones a menos de {REBOTE_BOTON_S} s de la anterior: rebote)")
     decir(r, f"|a| medio {np.linalg.norm(s['acc'], axis=1).mean():.3f} m/s² (g Quito {G}), "
              f"giroscopio medio {np.round(np.degrees(s['giro'].mean(axis=0)), 3)} °/s, "
              f"presion media {s['presion'].mean():.1f} Pa, temperatura media {s['temp'].mean():.2f} °C")
@@ -306,7 +342,7 @@ def comando_verificar(carpeta):
 def comando_reposo(carpeta):
     s = leer_sesion(carpeta)
     r = []
-    decir(r, f"=== Reposo: {s['nombre']} ({s['t'][-1]:.1f} s) ===")
+    decir(r, f"=== Reposo: {s['nombre']} ({s['duracion']:.1f} s = {s['duracion'] / 60:.1f} min, {texto_recorte(s)}) ===")
     q = detectar_quieto(s["t"], s["acc"], s["giro"])
     decir(r, f"Detector: quieto el {100 * q.mean():.1f} % del tiempo (ventanas de {VENTANA_QUIETO_S} s)")
     movimientos = tramos(~q)
@@ -328,10 +364,8 @@ def comando_reposo(carpeta):
         decir(r, f"  {eje} | {acc[:, i].mean():9.4f} | {acc[:, i].std():8.4f} | {giro[:, i].mean():8.3f} | {giro[:, i].std():7.4f}")
     modulo = np.linalg.norm(acc, axis=1).mean()
     decir(r, f"|a| medio {modulo:.4f} m/s², g Quito {G} -> diferencia {modulo - G:+.4f} m/s² (error de escala/sesgo; se corrige con 'caras')")
-    inicio = s["t"][q] < s["t"][q][0] + 60
-    final = s["t"][q] > s["t"][q][-1] - 60
-    decir(r, f"Sesgo del giroscopio en el primer minuto quieto {np.round(giro[inicio].mean(axis=0), 3)} °/s, "
-             f"en el ultimo {np.round(giro[final].mean(axis=0), 3)} °/s")
+    media = acc.mean(axis=0)
+    decir(r, f"Inclinacion respecto al eje mas cercano (sin calibrar): {np.degrees(np.arccos(np.abs(media).max() / np.linalg.norm(media))):.1f}°")
     sa = acc.std(axis=0).mean()
     decir(r, f"Prediccion: con ruido {sa:.4f} m/s² la velocidad hace un paseo aleatorio de "
              f"{sa * np.sqrt(dt * 60):.4f} m/s en 60 s y {sa * np.sqrt(dt * 600):.4f} m/s en 10 min")
@@ -353,10 +387,62 @@ def comando_reposo(carpeta):
     ax[1].set(ylabel="|w| (°/s)", xlabel="tiempo (s)  (naranja = en movimiento)")
     ax[0].legend()
     guardar_figura(fig, f"{s['nombre']}_reposo.png")
+    deriva = deriva_por_bloques(s, q, r)
     guardar_reporte(f"{s['nombre']}_reposo.txt", r)
     fila = fila_sesion(s, "reposo")
-    fila["resultado"] = f"quieto {100 * q.mean():.1f} %; ruido acel {sa:.4f} m/s²; sesgo giro {np.round(giro.mean(axis=0), 3)} °/s"
+    fila["resultado"] = f"quieto {100 * q.mean():.1f} %; ruido acel {sa:.4f} m/s²; sesgo giro {np.round(giro.mean(axis=0), 3)} °/s" + deriva
     agregar_bitacora(fila)
+
+
+def deriva_por_bloques(s, q, r):
+    dt = np.median(np.diff(s["t"]))
+    filas = []
+    for t0 in np.arange(s["t"][0], s["t"][-1], BLOQUE_DERIVA_S):
+        m = q & (s["t"] >= t0) & (s["t"] < t0 + BLOQUE_DERIVA_S)
+        mb = (s["t_baro"] >= t0) & (s["t_baro"] < t0 + BLOQUE_DERIVA_S)
+        if m.sum() * dt < 60 or mb.sum() == 0:
+            continue
+        g = np.degrees(s["giro"][m].mean(axis=0))
+        a = s["acc"][m].mean(axis=0)
+        filas.append({"min_ini": (t0 - s["t"][0]) / 60, "min_quieto": m.sum() * dt / 60, "gx": g[0], "gy": g[1], "gz": g[2],
+                      "ax": a[0], "ay": a[1], "az": a[2], "|a|": np.linalg.norm(s["acc"][m], axis=1).mean(),
+                      "P_hPa": s["presion"][mb].mean() / 100, "T_C": s["temp"][mb].mean()})
+    decir(r, f"--- Deriva por bloques de {BLOQUE_DERIVA_S / 60:.0f} min (solo muestras quietas; giro en °/s, acel en m/s²) ---")
+    if len(filas) < 2:
+        decir(r, "  Registro demasiado corto para ver deriva (hacen falta al menos 2 bloques).")
+        return ""
+    b = pd.DataFrame(filas)
+    decir(r, b.to_string(index=False, float_format="{:.4f}".format))
+    d = b.iloc[-1] - b.iloc[0]
+    horas = (b["min_ini"] + b["min_quieto"] / 2).to_numpy() / 60
+    dh = altura_barometrica(b["P_hPa"].iloc[-1] * 100, b["T_C"].to_numpy(), b["P_hPa"].iloc[0] * 100)
+    decir(r, f"Del primer al ultimo bloque: giro {d['gx']:+.3f} {d['gy']:+.3f} {d['gz']:+.3f} °/s; acel {d['ax']:+.4f} {d['ay']:+.4f} "
+             f"{d['az']:+.4f} m/s² (|a| {d['|a|']:+.4f}); presion {d['P_hPa']:+.2f} hPa (si fuera altura serian {dh:+.2f} m falsos); temperatura {d['T_C']:+.2f} °C")
+    pendientes = [np.polyfit(horas, b[e], 1)[0] for e in ["gx", "gy", "gz"]]
+    peor = int(np.argmax(np.abs(pendientes)))
+    k = pendientes[peor] / 3600
+    decir(r, f"Pendiente del sesgo del giroscopio: {np.round(pendientes, 4)} (°/s)/h. Prediccion: si solo se resta el sesgo del inicio, "
+             f"el eje {'xyz'[peor]} acumula un error de rumbo ½·k·t² = {0.5 * abs(k) * 600 ** 2:.1f}° en 10 min y {0.5 * abs(k) * 5400 ** 2:.0f}° en 90 min")
+    t_min = (b["min_ini"] + b["min_quieto"] / 2).to_numpy()
+    paso = max(1, len(s["t_baro"]) // 5000)
+    tb_min = (s["t_baro"][::paso] - s["t"][0]) / 60
+    fig, ax = plt.subplots(4, 1, figsize=(9, 10), sharex=True)
+    for e in "xyz":
+        ax[0].plot(t_min, b["g" + e] - b["g" + e].iloc[0], "o-", label=f"g{e} (primer bloque {b['g' + e].iloc[0]:.3f} °/s)")
+        ax[1].plot(t_min, b["a" + e] - b["a" + e].iloc[0], "o-", label=f"a{e} (primer bloque {b['a' + e].iloc[0]:.3f} m/s²)")
+    ax[2].plot(tb_min, s["presion"][::paso] / 100, color="0.75", lw=0.5, label="medida")
+    ax[2].plot(t_min, b["P_hPa"], "ko-", label="promedio del bloque")
+    ax[3].plot(tb_min, s["temp"][::paso], color="0.75", lw=0.5, label="medida")
+    ax[3].plot(t_min, b["T_C"], "ko-", label="promedio del bloque")
+    ax[0].set(ylabel="cambio del sesgo\ndel giroscopio (°/s)", title=f"Deriva por bloques de {BLOQUE_DERIVA_S / 60:.0f} min: {s['nombre']}")
+    ax[1].set(ylabel="cambio de la\naceleracion (m/s²)")
+    ax[2].set(ylabel="presion (hPa)")
+    ax[3].set(ylabel="temperatura (°C)", xlabel="minutos desde el inicio usado")
+    for a in ax:
+        a.legend(fontsize=8)
+        a.grid(alpha=0.3)
+    guardar_figura(fig, f"{s['nombre']}_deriva.png")
+    return f"; deriva {b['min_quieto'].sum():.0f} min: gx {b['gx'].iloc[0]:.3f}->{b['gx'].iloc[-1]:.3f} °/s, P {d['P_hPa']:+.2f} hPa, T {d['T_C']:+.2f} °C"
 
 
 def comando_caras(carpeta):
@@ -508,7 +594,7 @@ def leer_pisos():
 def comando_ascensor(carpeta):
     s = leer_sesion(carpeta)
     r = []
-    decir(r, f"=== Ascensor: {s['nombre']} ({s['t'][-1]:.1f} s) ===")
+    decir(r, f"=== Ascensor: {s['nombre']} ({s['duracion']:.1f} s, {texto_recorte(s)}) ===")
     sesgo, escala = cargar_calibracion(r)
     t = s["t"]
     acc = (s["acc"] - sesgo) / escala
@@ -519,7 +605,7 @@ def comando_ascensor(carpeta):
     b = a_bruta[rep].mean()
     a_corr = a_bruta - b
     ruido = a_corr[rep].std()
-    decir(r, f"Reposo inicial: {t[rep][-1]:.1f} s; |g| medido {np.linalg.norm(g_vec):.4f} m/s²; inclinacion "
+    decir(r, f"Reposo inicial: de {t[rep][0]:.1f} a {t[rep][-1]:.1f} s; |g| medido {np.linalg.norm(g_vec):.4f} m/s²; inclinacion "
              f"{np.degrees(np.arccos(arriba[2])):.2f}°; sesgo vertical b = {b:+.4f} m/s²; ruido {ruido:.4f} m/s²")
     mov, fuente = mascara_movimiento(s)
     decir(r, f"Paradas (ZUPT) segun {fuente}")
@@ -571,7 +657,7 @@ def comando_ascensor(carpeta):
     decir(r, f"Cruces de pisos intermedios por biseccion (fusion; la llegada la marca eventos.csv): {len(cruces)}")
     for tc, nivel in sorted(cruces):
         decir(r, f"  t = {tc:8.3f} s cruza {nivel:6.2f} m")
-    t_fin = t[-1]
+    t_fin = s["duracion"]
     obs_sin = abs(est["trapecio sin correccion"][-1] - h_f[-1])
     obs_con = abs(est["trapecio - sesgo"][-1] - h_f[-1])
     dt = np.median(np.diff(t))
@@ -599,9 +685,10 @@ def comando_ascensor(carpeta):
     guardar_figura(fig, f"{s['nombre']}_ascensor.png")
     fig, ax = plt.subplots(figsize=(7, 4.5))
     ax.semilogy(t[1:], np.abs(est["trapecio sin correccion"] - h_f)[1:], lw=0.8, label="observado sin restar sesgo")
-    ax.semilogy(t[1:], 0.5 * abs(b) * t[1:] ** 2, "--", label="predicho ½·b·t²")
+    te = t[1:] - t[0]
+    ax.semilogy(t[1:], 0.5 * abs(b) * te ** 2, "--", label="predicho ½·b·t²")
     ax.semilogy(t[1:], np.abs(est["trapecio - sesgo"] - h_f)[1:], lw=0.8, label="observado restando sesgo")
-    ax.semilogy(t[1:], ruido * np.sqrt(dt) * t[1:] ** 1.5 / np.sqrt(3), "--", label="predicho por ruido")
+    ax.semilogy(t[1:], ruido * np.sqrt(dt) * te ** 1.5 / np.sqrt(3), "--", label="predicho por ruido")
     ax.set(xlabel="tiempo (s)", ylabel="error de altura (m)", title="Error predicho vs observado")
     ax.legend(fontsize=8)
     guardar_figura(fig, f"{s['nombre']}_ascensor_error.png")
@@ -638,13 +725,13 @@ def referencia_viaje(nombre):
 def analizar_viaje(carpeta, sesgo, escala, r):
     s = leer_sesion(carpeta)
     t = s["t"]
-    decir(r, f"--- Viaje {s['nombre']} ({t[-1]:.1f} s) ---")
+    decir(r, f"--- Viaje {s['nombre']} ({s['duracion']:.1f} s, {texto_recorte(s)}) ---")
     acc = (s["acc"] - sesgo) / escala
     rep = reposo_inicial(s)
     g_vec = acc[rep].mean(axis=0)
     arriba = g_vec / np.linalg.norm(g_vec)
     sesgo_giro = s["giro"][rep].mean(axis=0)
-    decir(r, f"Sesgo del giroscopio medido en los primeros {t[rep][-1]:.1f} s: {np.round(np.degrees(sesgo_giro), 3)} °/s (se resta)")
+    decir(r, f"Sesgo del giroscopio medido en el reposo inicial ({t[rep][0]:.1f} a {t[rep][-1]:.1f} s): {np.round(np.degrees(sesgo_giro), 3)} °/s (se resta)")
     rumbo = trapecio(t, (s["giro"] - sesgo_giro) @ arriba)
     mov, fuente = mascara_movimiento(s)
     decir(r, f"Paradas (ZUPT) segun {fuente}")
@@ -752,13 +839,21 @@ def comando_metro(carpetas):
 
 def main():
     sys.stdout.reconfigure(encoding="utf-8")
+    args = sys.argv[1:]
+    if "--botones" in args:
+        OPCIONES["botones"] = True
+        args.remove("--botones")
+    if "--recorte" in args:
+        i = args.index("--recorte")
+        OPCIONES["recorte"] = float(args[i + 1])
+        del args[i:i + 2]
     comandos = {"verificar": comando_verificar, "reposo": comando_reposo, "caras": comando_caras, "ascensor": comando_ascensor}
-    if len(sys.argv) == 2 and sys.argv[1] == "metodos":
+    if len(args) == 1 and args[0] == "metodos":
         comando_metodos()
-    elif len(sys.argv) == 3 and sys.argv[1] in comandos:
-        comandos[sys.argv[1]](sys.argv[2])
-    elif len(sys.argv) >= 3 and sys.argv[1] == "metro":
-        comando_metro(sys.argv[2:])
+    elif len(args) == 2 and args[0] in comandos:
+        comandos[args[0]](args[1])
+    elif len(args) >= 2 and args[0] == "metro":
+        comando_metro(args[1:])
     else:
         print(USO)
 

@@ -1,0 +1,26 @@
+=== Reposo: reposo_90min_2026-11-21_1915-2049 (5673.1 s = 94.6 min, recortado: se usa de 8.2 a 5681.2 s) ===
+Detector: quieto el 100.0 % del tiempo (ventanas de 0.5 s)
+  El dispositivo no se movio en todo el registro.
+eje | media acel (m/s²) | ruido acel (m/s²) | sesgo giro (°/s) | ruido giro (°/s)
+  x |    1.5873 |   0.0113 |   -4.513 |  0.0607
+  y |   -0.2736 |   0.0105 |   -1.823 |  0.0542
+  z |    9.9695 |   0.0171 |   -0.163 |  0.0564
+|a| medio 10.0988 m/s², g Quito 9.77 -> diferencia +0.3288 m/s² (error de escala/sesgo; se corrige con 'caras')
+Inclinacion respecto al eje mas cercano (sin calibrar): 9.2°
+Prediccion: con ruido 0.0130 m/s² la velocidad hace un paseo aleatorio de 0.0071 m/s en 60 s y 0.0225 m/s en 10 min
+Prediccion: un sesgo de giroscopio de 4.513 °/s sin restar gira el rumbo 270.8° en 1 min
+Presion media 73125.8 Pa (desv. 28.25 Pa), tendencia +59.5 Pa/h; temperatura 25.04 a 26.31 °C
+--- Deriva por bloques de 10 min (solo muestras quietas; giro en °/s, acel en m/s²) ---
+ min_ini  min_quieto      gx      gy      gz     ax      ay     az     |a|    P_hPa     T_C
+  0.0000     10.0000 -4.4518 -1.8097 -0.1515 1.5764 -0.2706 9.9624 10.0899 730.8247 25.8743
+ 10.0000     10.0000 -4.4944 -1.8165 -0.1686 1.5874 -0.2734 9.9681 10.0974 730.8427 25.2090
+ 20.0000     10.0000 -4.5081 -1.8151 -0.1681 1.5869 -0.2734 9.9684 10.0976 731.0038 25.1024
+ 30.0000     10.0000 -4.5119 -1.8203 -0.1601 1.5883 -0.2733 9.9702 10.0997 731.1738 25.1053
+ 40.0000     10.0000 -4.5173 -1.8253 -0.1617 1.5886 -0.2727 9.9698 10.0992 731.3197 25.0986
+ 50.0000     10.0000 -4.5245 -1.8235 -0.1637 1.5886 -0.2736 9.9722 10.1017 731.4438 25.0811
+ 60.0000     10.0000 -4.5283 -1.8247 -0.1657 1.5900 -0.2731 9.9720 10.1017 731.4915 25.0759
+ 70.0000     10.0000 -4.5319 -1.8322 -0.1621 1.5881 -0.2745 9.9715 10.1010 731.5379 25.1136
+ 80.0000     10.0000 -4.5377 -1.8340 -0.1634 1.5903 -0.2767 9.9707 10.1005 731.5194 25.0963
+ 90.0000      4.5513 -4.5397 -1.8379 -0.1619 1.5905 -0.2764 9.9702 10.1001 731.6293 25.0902
+Del primer al ultimo bloque: giro -0.088 -0.028 -0.010 °/s; acel +0.0142 -0.0058 +0.0079 m/s² (|a| +0.0102); presion +0.80 hPa (si fuera altura serian -9.65 m falsos); temperatura -0.78 °C
+Pendiente del sesgo del giroscopio: [-0.047  -0.0174 -0.0018] (°/s)/h. Prediccion: si solo se resta el sesgo del inicio, el eje x acumula un error de rumbo ½·k·t² = 2.4° en 10 min y 191° en 90 min

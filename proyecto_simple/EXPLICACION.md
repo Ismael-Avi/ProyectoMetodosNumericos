@@ -94,6 +94,26 @@ muestras seguidas. Gráfica de todas las señales.
   giroscopio b gira el rumbo b·t.
 - Tendencia de la presión (Pa/h, recta por mínimos cuadrados con `np.polyfit`): sirve para ver la
   deriva por clima.
+- Inclinación: ángulo entre la aceleración media y el eje más cercano, arccos(max|a_i| / |a|).
+
+**`deriva_por_bloques`** (la llama `reposo`): parte el registro en bloques de 10 min y en cada uno
+promedia, con las muestras quietas, el giroscopio (= sesgo), el acelerómetro, la presión y la
+temperatura. Si el sensor fuera estable, todos los bloques darían lo mismo. Muestra:
+- el cambio del primer al último bloque. El cambio de presión también se pasa a "altura falsa"
+  con la fórmula barométrica: es lo que vería el ascensor si no se midiera P0 en cada sesión;
+- la pendiente del sesgo del giroscopio k en (°/s)/h, con una recta por mínimos cuadrados sobre los
+  bloques. Si solo se resta el sesgo medido al inicio, el sesgo que queda crece como k·t, y el rumbo
+  (su integral) se desvía ½·k·t².
+
+En el reposo real de 95 min (21/11/2026): la presión subió 0,80 hPa (unos 58 Pa/h, equivale a
+~9,7 m de altura falsa) y el sesgo de gx pasó de -4,452 a -4,540 °/s. Los primeros ~15 min el chip
+se calienta (26,3 °C) y se enfría a 25,1 °C, y ahí cambia más el sesgo (-0,043 °/s el primer
+bloque). Después la temperatura queda plana y gx sigue derivando lento (~-0,005 °/s cada 10 min),
+así que la deriva no se explica solo con la temperatura.
+
+**`recortar(s)`** (dentro de `leer_sesion`): con `--botones` y/o `--recorte N` se quedan solo las
+muestras dentro de la ventana elegida (IMU, barómetro y eventos), sin cambiar el eje de tiempo.
+Antes, `leer_sesion` ignora las pulsaciones a menos de 1 s de la anterior (rebote del pulsador).
 
 **`comando_caras`**: busca tramos quietos de más de 10 s. En cada uno promedia la aceleración y
 mira qué eje tiene casi toda la gravedad y con qué signo (eso dice qué cara está arriba). Con las 6

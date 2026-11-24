@@ -1,0 +1,11 @@
+=== Verificacion de reposo_90min_2026-11-21_1915-2049 ===
+chip WHO_AM_I 0x70, firmware 0.1, ±4 g, ±500 °/s, duracion 5694.3 s (94.9 min), registro completo
+IMU: 1138860 muestras, perdidas 0 (0.0000 %), seq repetidos o hacia atras: 0, t_us siempre creciente: True
+  frecuencia real: inicio 200.000 Hz, final 200.000 Hz (nominal 200 Hz, ventanas de 60 s)
+  periodo: medio 5000.0 us, jitter (desv. est.) 0.8 us, minimo 4993 us, maximo 5007 us
+Barometro: 142358 muestras, perdidas 0 (0.0000 %), seq repetidos o hacia atras: 0, t_us siempre creciente: True
+  frecuencia real: inicio 25.000 Hz, final 25.000 Hz (nominal 25 Hz, ventanas de 60 s)
+  periodo: medio 40000.0 us, jitter (desv. est.) 1.0 us, minimo 39849 us, maximo 40015 us
+Requisito >= 100 Hz: cumple; requisito 90 min sin perdidas: cumple
+Eventos del boton: 2 en [3.2, 5686.2] s (se ignoraron 1 pulsaciones a menos de 1.0 s de la anterior: rebote)
+|a| medio 10.099 m/s² (g Quito 9.77), giroscopio medio [-4.513 -1.823 -0.163] °/s, presion media 73125.9 Pa, temperatura media 25.19 °C

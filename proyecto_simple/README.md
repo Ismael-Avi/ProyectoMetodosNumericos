@@ -38,11 +38,28 @@ Se corren desde la carpeta `proyecto_simple/`:
 | Comando | Qué hace | Ejemplo |
 |---|---|---|
 | `verificar` | muestras perdidas, frecuencia real al inicio y al final, jitter, gráfica de señales | `python navegacion.py verificar datos/sesion_002` |
-| `reposo` | sesgo y ruido de cada eje, detector quieto / en movimiento, deriva de la presión | `python navegacion.py reposo datos/sesion_002` |
+| `reposo` | sesgo y ruido de cada eje, detector quieto / en movimiento, inclinación, deriva por bloques de 10 min (giroscopio, acelerómetro, presión, temperatura) con figura `*_deriva.png` | `python navegacion.py reposo datos/sesion_002` |
 | `caras` | calibración de seis caras; guarda `resultados/calibracion.json`. Además muestra \|g\| calibrado en cada tramo quieto que no se usó (posiciones inclinadas): prueba de que \|g\| no cambia al girar | `python navegacion.py caras datos/simulados/caras` |
 | `metodos` | prueba del BMP280 y de los métodos numéricos contra numpy y contra soluciones exactas | `python navegacion.py metodos` |
 | `ascensor` | altura y velocidad con dos métodos, ZUPT, barómetro, fusión, cruces de piso, errores | `python navegacion.py ascensor datos/simulados/ascensor` |
 | `metro` | rumbo, velocidad, distancia por tramo, trayectoria y dispersión entre viajes | `python navegacion.py metro datos/simulados/metro_1 datos/simulados/metro_2` |
+
+**Opciones** (sirven con cualquier comando que lee una sesión):
+
+- `--botones`: usa solo desde la primera hasta la última pulsación del botón.
+- `--recorte N`: quita N segundos al inicio y al final. Si se combina con `--botones`, se quitan
+  después de las pulsaciones (así no entra el movimiento de apretar el botón).
+
+El tiempo conserva el eje original (el segundo 3 sigue siendo el segundo 3). Ejemplo con el reposo
+real de 95 min:
+
+```
+python navegacion.py verificar datos/reposo_90min_2026-11-21_1915-2049
+python navegacion.py reposo    datos/reposo_90min_2026-11-21_1915-2049 --botones --recorte 5
+```
+
+`verificar` conviene correrlo sin recorte (las pérdidas y la frecuencia se miden en todo el
+registro). Las pulsaciones a menos de 1 s de la anterior se ignoran (rebote del pulsador).
 
 Orden recomendado: `verificar` → `reposo` → `caras` (una vez) → `ascensor` / `metro`.
 `ascensor` y `metro` usan la calibración de `caras`. Si no existe, avisan y siguen sin calibrar.
@@ -85,6 +102,8 @@ Parámetros elegidos por nosotros (no son constantes físicas):
 |---|---|---|
 | `UMBRAL_ACC`, `UMBRAL_GIRO` | 0,06 m/s², 0,3 °/s | desviación estándar en ventanas de 0,5 s. En reposo real (sesion_002) el ruido es ~0,016 m/s² y ~0,065 °/s; un golpe en la mesa da ~0,06–0,08 |
 | `REPOSO_INICIAL_S` | 10 s | reposo al inicio de cada sesión |
+| `REBOTE_BOTON_S` | 1 s | dos pulsaciones más juntas que esto cuentan como una (rebote; el firmware solo filtra 200 ms) |
+| `BLOQUE_DERIVA_S` | 600 s | tamaño de los bloques para estudiar la deriva en `reposo` |
 | `CARA_MINIMA_S`, `QUIETO_MINIMO_S` | 10 s, 3 s | duración mínima (sin contar 1 s de margen a cada lado) de una cara y de un tramo quieto extra |
 | `TAU_FILTRO_S` | 3 s | filtro complementario: por debajo de ~3 s manda el acelerómetro, por encima el barómetro |
 | `SUAVIZADO_BARO_S` | 10 s | ventana para derivar la altura barométrica en el metro (pendiente). Con 2 s la pendiente sale muy ruidosa |
