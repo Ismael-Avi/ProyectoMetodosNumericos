@@ -135,8 +135,12 @@ entre tramos antes y después. Con una sesión de prueba sintética (6 caras + 5
 45°), la variación bajó de 0,078 a 0,0006 m/s².
 
 Si la sesión no tiene las 6 caras, no se calibra, pero se revisan todos sus tramos quietos con la
-`calibracion.json` que ya existe. Así se puede grabar otro día una sesión solo con inclinaciones y
+`calibracion.json` que ya existe (la real). Así se puede grabar otro día una sesión solo con inclinaciones y
 comprobar la calibración vieja.
+
+Si la sesión de caras es simulada (`firmware_version` = `simulador`), el resultado se guarda en
+`resultados/simulados/calibracion_simulada.json`. `cargar_calibracion` solo lee
+`resultados/calibracion.json`, así que una calibración simulada nunca se aplica a datos reales.
 
 ## 5. Ascensor (`comando_ascensor`)
 

@@ -132,6 +132,7 @@ python navegacion.py reposo    datos/reposo_90min_2026-11-21_1915-2049 --botones
 | Abrir el Serial Monitor reinicia el ESP32 | Al abrir el monitor serie, el adaptador USB reinicia el ESP32. El firmware empieza a grabar al encender y crea una carpeta `sesion_NNN` nueva en cada arranque, con `t_us` desde cero | TODO: completar cómo lo manejaron (p. ej., abrir el monitor antes de empezar el experimento o no abrirlo durante la grabación) |
 | Cortar la energía parte la sesión en dos carpetas | Cada encendido crea una carpeta nueva. Si la energía se corta a mitad de un experimento, quedan dos carpetas y el reloj `t_us` vuelve a empezar | TODO: completar cómo lo manejaron |
 | Deriva de la presión por el clima | En el reposo de 90 min la presión subió 0,80 hPa sin mover el dispositivo. Equivale a 9,65 m de altura falsa | Medir P0 (la presión de referencia) en el reposo inicial de cada sesión, en vez de usar un valor fijo |
+| Calibración simulada con aspecto de real | La única `resultados/calibracion.json` venía de la sesión **simulada** `caras` (ver `bitacora.csv`), y `ascensor` y `metro` la cargaban sin avisar. Con datos reales se habría aplicado un sesgo y una escala inventados | El 23/11/2026 se movió a `resultados/simulados/calibracion_simulada.json`. `navegacion.py` solo carga `resultados/calibracion.json`, que tiene que salir de una sesión real de `caras`; si falta, `ascensor` y `metro` avisan y siguen sin calibrar. Si `caras` procesa una sesión simulada, guarda en `resultados/simulados/` |
 | Calentamiento inicial del chip | La temperatura del BMP280 sube ~1,1 °C en los primeros ~2 min y luego baja hasta estabilizarse hacia el minuto 18–20. En ese tramo el sesgo de gx cambia más | Se midió con la deriva por bloques de `reposo`. Se mide el sesgo en el reposo inicial de cada sesión. TODO: decidir si se enciende el dispositivo ~20 min antes de los experimentos |
 
 ## 4. Decisiones y por qué
@@ -207,9 +208,8 @@ copió sin cambios al repo):
 ## 6. Pendientes del avance
 
 - [ ] **Seis caras.** Grabar el dispositivo quieto ≥ 10 s en cada una de sus seis caras, más varias
-  posiciones inclinadas para comprobar. Ojo: el `resultados/calibracion.json` actual viene de la
-  sesión **simulada** `caras` (ver `bitacora.csv`). Hay que reemplazarlo con una calibración real
-  antes de procesar el ascensor y el metro.
+  posiciones inclinadas para comprobar. Todavía no hay calibración real: hasta que se corra
+  `caras` con esta sesión, `ascensor` y `metro` avisan y siguen sin calibrar (ver sección 3).
 - [ ] **Soldar el pulsador y montar todo en una caja** (quita el rebote y la inclinación de la
   protoboard).
 - [ ] **Ascensor:** edificio de ≥ 5 pisos, ≥ 10 recorridos de subida y bajada con paradas

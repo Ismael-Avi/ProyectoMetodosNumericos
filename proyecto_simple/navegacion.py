@@ -44,7 +44,8 @@ PRUEBA_RUIDO = 0.02
 CARPETA = os.path.dirname(os.path.abspath(__file__))
 RESULTADOS = os.path.join(CARPETA, "resultados")
 BITACORA = os.path.join(CARPETA, "bitacora.csv")
-CALIBRACION = os.path.join(RESULTADOS, "calibracion.json")
+CALIBRACION = os.path.join(RESULTADOS, "calibracion.json")   # solo calibracion REAL; es la unica que se usa
+CALIBRACION_SIMULADA = os.path.join(RESULTADOS, "simulados", "calibracion_simulada.json")   # nunca se carga
 PISOS = os.path.join(CARPETA, "datos", "pisos.csv")
 ESTACIONES = os.path.join(CARPETA, "datos", "estaciones.csv")
 VIAJES = os.path.join(CARPETA, "datos", "viajes.csv")
@@ -234,8 +235,11 @@ def reposo_inicial(s):
 
 
 def cargar_calibracion(r):
+    # Solo se usa la calibracion de una sesion real de caras. La de la sesion simulada se guarda
+    # aparte (CALIBRACION_SIMULADA) y no se carga nunca, para que no pase por un resultado real.
     if not os.path.exists(CALIBRACION):
-        decir(r, "AVISO: no existe resultados/calibracion.json (correr 'caras'); se usa sesgo 0 y escala 1")
+        decir(r, "AVISO: no existe resultados/calibracion.json (correr 'caras' con una sesion real); "
+                 "se sigue SIN CALIBRAR: sesgo 0 y escala 1")
         return np.zeros(3), np.ones(3)
     with open(CALIBRACION, encoding="utf-8") as f:
         c = json.load(f)
@@ -493,11 +497,15 @@ def comando_caras(carpeta):
         giro = np.degrees(np.array([quietos[k][3] for k in caras.values()]))
         decir(r, f"Sesgo del giroscopio (promedio de las caras, solo informativo): {np.round(giro.mean(axis=0), 3)} °/s; "
                  f"variacion entre caras {np.round(giro.std(axis=0), 3)} °/s")
-        os.makedirs(RESULTADOS, exist_ok=True)
-        with open(CALIBRACION, "w", encoding="utf-8") as f:
+        # Una sesion simulada no debe dejar una calibracion que parezca real: va a otra carpeta.
+        simulada = s["meta"].get("firmware_version") == "simulador"
+        destino = CALIBRACION_SIMULADA if simulada else CALIBRACION
+        os.makedirs(os.path.dirname(destino), exist_ok=True)
+        with open(destino, "w", encoding="utf-8") as f:
             json.dump({"sesion": s["nombre"], "g": G, "sesgo": list(sesgo), "escala": list(escala),
                        "sesgo_giro_dps_informativo": list(giro.mean(axis=0))}, f, indent=2)
-        decir(r, "Guardado en resultados/calibracion.json")
+        decir(r, f"Guardado en {os.path.relpath(destino, CARPETA).replace(os.sep, '/')}"
+                 + (" (sesion SIMULADA: no se usa en ascensor ni metro)" if simulada else ""))
         fila["resultado"] = f"sesgo {np.round(sesgo, 4)} m/s²; escala {np.round(escala, 5)}"
     decir(r, f"--- Prueba independiente: tramos quietos que no se usaron para calibrar (minimo {QUIETO_MINIMO_S:.0f} s) ---")
     if len(extras) == 0:

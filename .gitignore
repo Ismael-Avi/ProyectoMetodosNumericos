@@ -14,3 +14,6 @@ procesamiento/resultados/*
 # Editor
 .vscode/
 .pio/
+
+# Copia duplicada del firmware y de sesion_002 tal como llegaron (no se borra, pero no se sube)
+entrada/

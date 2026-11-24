@@ -38,7 +38,8 @@ datos/simulados/         sesiones simuladas, solo para probar el código (no se 
 datos/pisos.csv          altura real de cada piso (flexómetro)       -> VACÍO, falta medir
 datos/estaciones.csv     estaciones, coordenadas y largo de cada tramo -> VACÍO, falta llenar
 datos/viajes.csv         en qué estación empezó cada viaje y en qué sentido -> VACÍO
-resultados/              figuras (.png), reportes (.txt) y calibracion.json
+resultados/              figuras (.png), reportes (.txt) y calibracion.json (solo de una sesión real)
+resultados/simulados/    calibracion_simulada.json: la de la sesión simulada de caras, no se usa
 bitacora.csv             una fila por cada comando ejecutado
 bitacora.md              bitácora escrita: experimentos, problemas, decisiones, uso de IA
 fotos/                   fotos del montaje
@@ -58,7 +59,7 @@ Se corren desde la carpeta `proyecto_simple/`:
 |---|---|---|
 | `verificar` | muestras perdidas, frecuencia real al inicio y al final, jitter, gráfica de señales | `python navegacion.py verificar datos/sesion_002` |
 | `reposo` | sesgo y ruido de cada eje, detector quieto / en movimiento, inclinación, deriva por bloques de 10 min (giroscopio, acelerómetro, presión, temperatura) con figura `*_deriva.png` | `python navegacion.py reposo datos/sesion_002` |
-| `caras` | calibración de seis caras; guarda `resultados/calibracion.json`. Además muestra \|g\| calibrado en cada tramo quieto que no se usó (posiciones inclinadas): prueba de que \|g\| no cambia al girar | `python navegacion.py caras datos/simulados/caras` |
+| `caras` | calibración de seis caras; guarda `resultados/calibracion.json` (si la sesión es simulada, guarda `resultados/simulados/calibracion_simulada.json`, que ningún comando usa). Además muestra \|g\| calibrado en cada tramo quieto que no se usó (posiciones inclinadas): prueba de que \|g\| no cambia al girar | `python navegacion.py caras datos/simulados/caras` |
 | `metodos` | prueba del BMP280 y de los métodos numéricos contra numpy y contra soluciones exactas | `python navegacion.py metodos` |
 | `ascensor` | altura y velocidad con dos métodos, ZUPT, barómetro, fusión, cruces de piso, errores | `python navegacion.py ascensor datos/simulados/ascensor` |
 | `metro` | rumbo, velocidad, distancia por tramo, trayectoria y dispersión entre viajes | `python navegacion.py metro datos/simulados/metro_1 datos/simulados/metro_2` |
@@ -81,7 +82,8 @@ python navegacion.py reposo    datos/reposo_90min_2026-11-21_1915-2049 --botones
 registro). Las pulsaciones a menos de 1 s de la anterior se ignoran (rebote del pulsador).
 
 Orden recomendado: `verificar` → `reposo` → `caras` (una vez) → `ascensor` / `metro`.
-`ascensor` y `metro` usan la calibración de `caras`. Si no existe, avisan y siguen sin calibrar.
+`ascensor` y `metro` usan solo `resultados/calibracion.json`, que debe venir de una sesión real de
+`caras`. Si no existe, avisan y siguen sin calibrar (sesgo 0, escala 1).
 
 ## Cómo hay que grabar (lo que el programa supone)
 
