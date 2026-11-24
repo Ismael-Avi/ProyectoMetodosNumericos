@@ -4,6 +4,21 @@ Todo el procesamiento está en un solo script, `navegacion.py`. Lee las sesiones
 firmware `firmware/registrador_v01/registrador_v01.ino` (ESP32 + MPU-6500 + BMP280) y calcula
 velocidad, altura y trayectoria sin GPS.
 
+## Mapa de la entrega
+
+Rutas relativas a `proyecto_simple/`:
+
+| Qué | Dónde |
+|---|---|
+| Presentación | [`presentacion/`](presentacion/) (TODO: subir el archivo de la presentación) |
+| Bitácora | [`bitacora.md`](bitacora.md) (escrita) y [`bitacora.csv`](bitacora.csv) (registro automático de cada comando) |
+| Firmware | [`firmware/registrador_v01/registrador_v01.ino`](firmware/registrador_v01/registrador_v01.ino) |
+| Programa | [`navegacion.py`](navegacion.py), explicado en [`EXPLICACION.md`](EXPLICACION.md) |
+| Datos crudos | [`datos/`](datos/): una carpeta por sesión real (`meta.json`, `imu.csv`, `baro.csv`, `eventos.csv`) |
+| Descripción de los datos | [`datos/LEEME.md`](datos/LEEME.md): tabla de sesiones, formato de cada archivo, conversión a unidades y configuración del sensor |
+| Resultados | [`resultados/`](resultados/): figuras y reportes de cada comando |
+| Fotos del montaje | [`fotos/`](fotos/) (TODO: subir las fotos) |
+
 ## Instalar
 
 ```
@@ -18,12 +33,16 @@ Se probó con Python 3.14, numpy 2.5, pandas 3.1 y matplotlib 3.11. No hace falt
 navegacion.py            todo el procesamiento
 firmware/registrador_v01 firmware del dispositivo (copia sin cambios del que ya se probó)
 datos/sesion_NNN/        sesiones reales: meta.json, imu.csv, baro.csv, eventos.csv
+datos/LEEME.md           descripción de las sesiones y del formato de los archivos
 datos/simulados/         sesiones simuladas, solo para probar el código (no se suben a git)
 datos/pisos.csv          altura real de cada piso (flexómetro)       -> VACÍO, falta medir
 datos/estaciones.csv     estaciones, coordenadas y largo de cada tramo -> VACÍO, falta llenar
 datos/viajes.csv         en qué estación empezó cada viaje y en qué sentido -> VACÍO
 resultados/              figuras (.png), reportes (.txt) y calibracion.json
 bitacora.csv             una fila por cada comando ejecutado
+bitacora.md              bitácora escrita: experimentos, problemas, decisiones, uso de IA
+fotos/                   fotos del montaje
+presentacion/            presentación de la entrega
 ```
 
 `datos/viajes.csv` no estaba en el plan original. Hace falta porque con solo `eventos.csv` el
