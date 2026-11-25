@@ -1,0 +1,19 @@
+=== Calibracion de seis caras: caras_2026-11-24v1 ===
+Tramos quietos: 8; caras distintas 6 ['x+', 'x-', 'y+', 'y-', 'z+', 'z-']; tramos extra 2
+eje x: a+ = 9.8270, a- = -9.5700 -> sesgo +0.1285 m/s², escala 0.99268
+eje y: a+ = 9.7612, a- = -9.7902 -> sesgo -0.0145 m/s², escala 1.00058
+eje z: a+ = 10.0633, a- = -9.6073 -> sesgo +0.2280 m/s², escala 1.00668
+cara | inclinacion vs eje (°) | |g| antes (m/s²) | error antes | |g| despues | error despues   (despues ~9.77: se calibro con estas caras)
+  x+ |   7.1 | 9.8788 | +0.1088 | 9.8450 | +0.0750
+  x- |   7.6 | 9.6901 | -0.0799 | 9.8556 | +0.0856
+  y+ |   3.3 | 9.7930 | +0.0230 | 9.7861 | +0.0161
+  y- |   3.6 | 9.8039 | +0.0339 | 9.7897 | +0.0197
+  z+ |   7.2 | 10.1535 | +0.3835 | 9.8472 | +0.0772
+  z- |   5.8 | 9.6450 | -0.1250 | 9.8198 | +0.0498
+Sesgo del giroscopio (promedio de las caras, solo informativo): [-4.56  -1.731 -0.282] °/s; variacion entre caras [0.007 0.009 0.005] °/s
+Guardado en resultados/calibracion.json
+--- Prueba independiente: tramos quietos que no se usaron para calibrar (minimo 3 s) ---
+tramo | t (s) | inclinacion vs eje mas cercano (°) | |g| antes (m/s²) | error antes | |g| calibrado | error calibrado
+   0 |    56.0-   69.0 |   7.2 | 10.1560 | +0.3860 | 9.8497 | +0.0797
+   1 |   221.0-  227.5 |   7.1 | 9.8789 | +0.1089 | 9.8451 | +0.0751
+Variacion de |g| entre tramos (desv. est.): antes 0.1385 m/s², calibrado 0.0023 m/s²; error maximo calibrado 0.0797 m/s²

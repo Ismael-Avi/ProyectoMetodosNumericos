@@ -34,7 +34,8 @@ Se probó con Python 3.14, numpy 2.5, pandas 3.1 y matplotlib 3.11. No hace falt
 navegacion.py            todo el procesamiento
 firmware/registrador_v01 firmware del dispositivo (copia sin cambios del que ya se probó)
 datos/<sesion>/          sesiones reales: meta.json, imu.csv, baro.csv, eventos.csv
-                         (sesion_002, reposo_90min_2026-11-21_1915-2049, caras_2026-11-24)
+                         (sesion_002, reposo_90min_2026-11-21_1915-2049, caras_2026-11-24,
+                         caras_2026-11-24v1)
 datos/LEEME.md           descripción de las sesiones y del formato de los archivos
 datos/simulados/         sesiones simuladas, solo para probar el código (no se suben a git)
 datos/pisos.csv          altura real de cada piso (flexómetro)       -> VACÍO, falta medir
@@ -92,14 +93,16 @@ Orden recomendado: `verificar` → `reposo` → `caras` (una vez) → `ascensor`
 
 ## Resultados con datos reales
 
-Hasta ahora hay tres sesiones reales: dos de reposo (`sesion_002`, 142 s, y
-`reposo_90min_2026-11-21_1915-2049`, 94,9 min) y una de seis caras (`caras_2026-11-24`). El resumen
+Hasta ahora hay cuatro sesiones reales: dos de reposo (`sesion_002`, 142 s, y
+`reposo_90min_2026-11-21_1915-2049`, 94,9 min) y dos de seis caras (`caras_2026-11-24`, la
+calibración oficial, y `caras_2026-11-24v1`, un intento anterior que sirve para comparar). El resumen
 está en [`RESULTADOS_AVANCE.md`](RESULTADOS_AVANCE.md). Los números principales:
 
-- 0 muestras perdidas y 200,000 Hz al inicio y al final en las tres sesiones, incluida la de 95 min.
+- 0 muestras perdidas y 200,000 Hz al inicio y al final en las cuatro sesiones, incluida la de 95 min.
 - Sesgo del giroscopio ~(-4,5; -1,8; -0,2) °/s; ruido del acelerómetro 0,013 a 0,018 m/s².
 - Calibración de seis caras: |g| en 8 posiciones que no se usaron para calibrar pasa de 9,661–10,127
-  a 9,770–9,799 m/s².
+  a 9,770–9,799 m/s². Los sesgos de dos calibraciones distintas coinciden (diferencias de 0,003 a
+  0,022 m/s²).
 
 **El ascensor y el metro todavía no se han grabado.** Todo lo que el programa calcula para ellos
 (`ascensor`, `metro`) se probó solo con sesiones simuladas, y sus resultados están en

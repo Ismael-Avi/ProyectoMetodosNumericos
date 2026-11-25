@@ -9,7 +9,7 @@ grabado (ver la última sección). El metro va en el segundo parcial.
 datos crudos en una microSD: acelerómetro y giroscopio a 200 Hz, barómetro a 25 Hz. Todo se procesa
 después con `navegacion.py`. Las figuras están en `resultados/`.
 
-## 1. Reposo corto (`sesion_002`, 21/11/2026)
+## 1. Reposo corto (`sesion_002`, 20/11/2026)
 
 **Qué se hizo:** primera prueba del firmware. 142 s en reposo sobre una mesa, alimentado por el USB
 de la laptop.
@@ -102,8 +102,8 @@ Chequeos que se cumplen con los datos reales:
 
 - **Sin pérdidas en 90 min:** 0 muestras perdidas y 200,000 Hz al inicio y al final en 95 min.
   Cumple el requisito de 90 min de registro continuo (y el de ≥ 100 Hz).
-- **Presión coherente con Quito:** ~731 hPa (732,7; 731,3 y 730,8 hPa en las tres sesiones). A nivel
-  del mar serían ~1013 hPa. Con la atmósfera estándar, 731 hPa corresponde a unos 2650–2670 m.
+- **Presión coherente con Quito:** ~731 hPa (732,7; 731,3; 730,3 y 730,8 hPa en las cuatro sesiones). A nivel
+  del mar serían ~1013 hPa. Con la atmósfera estándar, 731 hPa corresponde a unos 2650–2680 m.
   Es el orden de la altitud de Quito (~2850 m). La atmósfera estándar no representa el clima real
   del día ni el del trópico, y no sabemos la altitud exacta del lugar (TODO).
 - **La presión cambia con el clima:** subió 0,80 hPa en 90 min sin mover el dispositivo, unos
@@ -116,10 +116,24 @@ Chequeos que se cumplen con los datos reales:
   - sin calibrar, |g| va de 9,66 a 10,13 m/s² según la posición;
   - calibrado, va de 9,770 a 9,799 m/s² en 8 posiciones que no se usaron para calibrar (variación
     18 veces menor);
-  - aplicando la misma calibración a los reposos del 21/11 (otro día, otro montaje) da 9,776 y
+  - aplicando la misma calibración a los reposos del 20 y el 21/11 (otros días, otro montaje) da 9,776 y
     9,755 m/s².
-- **Calibraciones reproducibles:** TODO. Falta comparar los sesgos y las escalas con los del segundo
-  intento de caras (`datos/caras_2026-11-24_intento2/`), que todavía no está en el repositorio.
+- **Calibraciones reproducibles:** se calibró dos veces el 24/11. La oficial es `caras_2026-11-24`
+  (~18:30). La otra es `caras_2026-11-24v1` (~18:00): solo seis caras, más inclinadas (3° a 9°).
+
+  | Eje | Sesgo v1 (m/s²) | Sesgo oficial (m/s²) | Escala v1 | Escala oficial |
+  |---|---|---|---|---|
+  | x | +0,1285 | +0,1067 | 0,99268 | 0,99916 |
+  | y | −0,0145 | −0,0178 | 1,00058 | 1,00065 |
+  | z | +0,2280 | +0,2240 | 1,00668 | 1,01109 |
+
+  - Los sesgos coinciden: z y y difieren en 0,004 y 0,003 m/s², x en 0,022 m/s².
+  - En v1, las escalas de x y z salen ~0,5 % más bajas porque esas caras quedaron más inclinadas
+    (~7° contra ~3,5°). Es el efecto de cos θ: para x se predice 0,9937 y se mide 0,9935. En y la
+    inclinación fue igual en los dos intentos y la escala coincide (diferencia 0,0001).
+  - Aplicada a los tramos de v1, la calibración oficial da |g| de 9,771 a 9,813 m/s² (sin
+    calibrar: 9,645 a 10,156).
+  - Figura: `resultados/caras_2026-11-24v1_caras.png`, igual a la de la oficial.
 - **Métodos numéricos verificados:**
   - el BMP280 reproduce el ejemplo de la hoja de datos (25,08 °C y 100 653,27 Pa);
   - el rectángulo converge con orden 1 y el trapecio con orden 2 (`resultados/metodos_convergencia.png`:
