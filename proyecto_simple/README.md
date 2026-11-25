@@ -10,9 +10,9 @@ Rutas relativas a `proyecto_simple/`:
 
 | Qué | Dónde |
 |---|---|
-| Presentación | [`presentacion/`](presentacion/) (TODO: subir el archivo de la presentación) |
+| Presentación | [`presentacion/`](presentacion/) (pendiente: se hará después del ascensor) |
 | Bitácora | [`bitacora.md`](bitacora.md) (escrita) y [`bitacora.csv`](bitacora.csv) (registro automático de cada comando) |
-| Firmware | [`firmware/registrador_v01/registrador_v01.ino`](firmware/registrador_v01/registrador_v01.ino) |
+| Firmware | [`firmware/registrador_v01/registrador_v01.ino`](firmware/registrador_v01/registrador_v01.ino) (C++, Arduino IDE 2.3.11 con el paquete esp32 de Espressif 3.3.12) |
 | Programa | [`navegacion.py`](navegacion.py), explicado en [`EXPLICACION.md`](EXPLICACION.md) |
 | Datos crudos | [`datos/`](datos/): una carpeta por sesión real (`meta.json`, `imu.csv`, `baro.csv`, `eventos.csv`) |
 | Descripción de los datos | [`datos/LEEME.md`](datos/LEEME.md): tabla de sesiones, formato de cada archivo, conversión a unidades y configuración del sensor |
@@ -131,14 +131,30 @@ está en [`RESULTADOS_AVANCE.md`](RESULTADOS_AVANCE.md). Los números principale
 
 | Constante | Valor | Fuente |
 |---|---|---|
-| `G` (gravedad en Quito) | 9,77 m/s² | valor del enunciado. **TODO: citar una fuente** (p. ej. un modelo de gravedad a 2850 m, latitud 0,2° S) |
+| `G` (gravedad en Quito) | 9,77 m/s² | valor del enunciado; coincide con la gravedad normal GRS80 en el ecuador menos la corrección de aire libre a 2850 m: ~9,7715 m/s² (cálculo abajo) |
 | `G_ESTANDAR` | 9,80665 m/s² | definición de 1 g (3.ª CGPM, 1901). Solo sirve para pasar de "g" a m/s², no es la gravedad de Quito |
 | `LSB_POR_G[4]` | 8192 LSB/g | InvenSense, *MPU-6500 Product Specification*, tabla de especificaciones del acelerómetro (Sensitivity Scale Factor, AFS_SEL=1) |
 | `LSB_POR_DPS[500]` | 65,5 LSB/(°/s) | misma hoja, tabla del giroscopio (FS_SEL=1) |
-| fórmula del BMP280 | `bmp280()` | Bosch, *BMP280 datasheet* BST-BMP280-DS001: fórmula de compensación en punto flotante (double) y ejemplo de cálculo (adc_T=519888, adc_P=415148 → 25,08 °C y 100653,27 Pa). TODO: anotar el número de sección del PDF que usen |
+| fórmula del BMP280 | `bmp280()` | Bosch, *BMP280 datasheet* BST-BMP280-DS001: fórmula de compensación en punto flotante (double) y ejemplo de cálculo (adc_T=519888, adc_P=415148 → 25,08 °C y 100653,27 Pa). Fórmula en la sección 3.11.3, versión en punto flotante en el apéndice 8.1, ejemplo en la sección 3.12 (verificar con la revisión del PDF) |
 | `R_GAS` | 8,314462618 J/(mol·K) | constante de los gases, valor exacto del SI (2019) |
 | `M_AIRE` | 0,0289644 kg/mol | masa molar del aire seco, *U.S. Standard Atmosphere 1976* |
 | `RADIO_TIERRA` | 6 371 000 m | radio medio de la Tierra (IUGG). Solo para pasar lat/lon a metros en distancias cortas |
+
+### De dónde sale g = 9,77 m/s²
+
+Es una estimación con la gravedad normal del elipsoide GRS80, corregida por la altura:
+
+1. Gravedad normal GRS80 en el ecuador: γₑ = 9,7803267715 m/s².
+2. Latitud de Quito ≈ 0,2° S. Con la fórmula de Somigliana, γ(φ) = γₑ·(1 + k·sen²φ)/√(1 − e²·sen²φ),
+   con k = 0,001931851353 y e² = 0,00669438002290. A 0,2° la corrección es de 6·10⁻⁷ m/s², despreciable.
+3. Corrección de aire libre: 0,3086 mGal/m = 0,3086·10⁻⁵ (m/s²)/m. A 2850 m:
+   0,3086·10⁻⁵ × 2850 = 0,0088 m/s².
+4. g ≈ 9,7803 − 0,0088 = **9,7715 m/s²**, o sea ~9,771 m/s².
+
+El programa usa `G = 9,77`, el valor del enunciado. La diferencia con 9,7715 es 0,0015 m/s² (0,015 %),
+mucho menor que los errores de calibración del acelerómetro (~0,02 m/s²). Es un valor de modelo, no
+una medición: no incluye el efecto de la masa de la montaña (corrección de Bouguer) ni de la
+topografía.
 
 Parámetros elegidos por nosotros (no son constantes físicas):
 

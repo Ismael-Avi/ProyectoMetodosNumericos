@@ -9,7 +9,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-G = 9.77
+G = 9.77   # m/s², enunciado; GRS80 en el ecuador - aire libre a 2850 m da ~9.7715 (calculo en el README)
 G_ESTANDAR = 9.80665
 LSB_POR_G = {2: 16384.0, 4: 8192.0, 8: 4096.0, 16: 2048.0}
 LSB_POR_DPS = {250: 131.0, 500: 65.5, 1000: 32.8, 2000: 16.4}

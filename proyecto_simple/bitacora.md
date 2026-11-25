@@ -252,8 +252,8 @@ python navegacion.py caras     datos/caras_2026-11-24      (para dejar la calibr
 | Problema | Qué pasaba | Cómo se resolvió |
 |---|---|---|
 | Rebote del pulsador sin soldar | Una pulsación quedaba registrada dos veces. En el reposo de 90 min, la pulsación final aparece dos veces a 0,40 s | Antirrebote de 200 ms en el firmware (interrupción `isrBoton`) y, como no alcanzó, filtro de 1 s en Python (`REBOTE_BOTON_S`): las pulsaciones a menos de 1 s de la anterior se ignoran. Solución definitiva: soldar el pulsador (pendiente) |
-| Abrir el Serial Monitor reinicia el ESP32 | Al abrir el monitor serie, el adaptador USB reinicia el ESP32. El firmware empieza a grabar al encender y crea una carpeta `sesion_NNN` nueva en cada arranque, con `t_us` desde cero | TODO: completar cómo lo manejaron (p. ej., abrir el monitor antes de empezar el experimento o no abrirlo durante la grabación) |
-| Cortar la energía parte la sesión en dos carpetas | Cada encendido crea una carpeta nueva. Si la energía se corta a mitad de un experimento, quedan dos carpetas y el reloj `t_us` vuelve a empezar | TODO: completar cómo lo manejaron |
+| Abrir el Serial Monitor reinicia el ESP32 | Al abrir el monitor serie, el adaptador USB reinicia el ESP32. El firmware empieza a grabar al encender y crea una carpeta `sesion_NNN` nueva en cada arranque, con `t_us` desde cero | Por protocolo: no abrir el Serial Monitor durante una grabación. Después de cada grabación se verifica que haya una sola carpeta y que `seq` sea continuo (`verificar`) |
+| Cortar la energía parte la sesión en dos carpetas | Cada encendido crea una carpeta nueva. Si la energía se corta a mitad de un experimento, quedan dos carpetas y el reloj `t_us` vuelve a empezar. Pasaba porque la power bank se apagaba al estar descargada | Cargar la power bank antes de grabar. En el reposo de 95 min se verificó que no hubo cortes: una sola carpeta, `seq` continuo (0 muestras perdidas) e intervalo máximo entre muestras de 5,007 ms |
 | Deriva de la presión por el clima | En el reposo de 90 min la presión subió 0,80 hPa sin mover el dispositivo. Equivale a 9,65 m de altura falsa | Medir P0 (la presión de referencia) en el reposo inicial de cada sesión, en vez de usar un valor fijo |
 | Calibración simulada con aspecto de real | La única `resultados/calibracion.json` venía de la sesión **simulada** `caras` (ver `bitacora.csv`), y `ascensor` y `metro` la cargaban sin avisar. Con datos reales se habría aplicado un sesgo y una escala inventados | El 23/11/2026 se movió a `resultados/simulados/calibracion_simulada.json`. `navegacion.py` solo carga `resultados/calibracion.json`, que tiene que salir de una sesión real de `caras`; si falta, `ascensor` y `metro` avisan y siguen sin calibrar. Si `caras` procesa una sesión simulada, guarda en `resultados/simulados/`. Desde el 24/11/2026 `resultados/calibracion.json` sale de la sesión real `caras_2026-11-24` |
 | Caras inclinadas o incompletas en la calibración | En el primer intento faltó la cara y− y las caras quedaron inclinadas hasta 17°. En el segundo (`caras_2026-11-24v1`), inclinadas 3° a 9° y sin posiciones para comprobar | Fijar la protoboard dentro de una caja y apoyar la caja en sus caras (desde el segundo intento); dejar las caras lo más verticales posible y agregar posiciones inclinadas para comprobar. El tercer intento (`caras_2026-11-24`) es la calibración oficial |
@@ -279,8 +279,10 @@ python navegacion.py caras     datos/caras_2026-11-24      (para dejar la calibr
   extra para empezar a grabar, y el botón queda libre para marcar puertas y estaciones. Para
   terminar se apaga el dispositivo; el `flush` cada 1 s limita la pérdida a como máximo el último
   segundo. La contra es que cada encendido o reinicio crea una carpeta nueva (ver problemas).
-- **g = 9,77 m/s² para Quito.** Es el valor del enunciado. A 2850 m de altura y cerca del ecuador, la
-  gravedad es menor que 9,81. TODO: citar fuente.
+- **g = 9,77 m/s² para Quito.** Es el valor del enunciado. Lo comprobamos con la gravedad normal GRS80
+  en el ecuador (9,7803267715 m/s²; a 0,2° S la corrección por latitud es despreciable) menos la
+  corrección de aire libre a 2850 m (0,3086 mGal/m × 2850 m ≈ 0,0088 m/s²): ~9,7715 m/s². La
+  diferencia con 9,77 es 0,0015 m/s². El cálculo está en el README.
 - **Un solo script en Python (`navegacion.py`).** La primera versión (`procesamiento/`) tenía 32
   archivos de Python sin contar las pruebas. Se rehízo en un solo archivo, con comandos (`verificar`, `reposo`, `caras`, `metodos`,
   `ascensor`, `metro`), para que cada integrante pueda leerlo de principio a fin y defenderlo. Los
@@ -291,8 +293,9 @@ python navegacion.py caras     datos/caras_2026-11-24      (para dejar la calibr
 
 **Qué se hizo con IA** (en los commits figura Claude como coautor: Claude Fable 5.2 en
 `procesamiento/` y en el primer firmware de PlatformIO, `firmware/`; Claude Opus 5.5 en
-`proyecto_simple/`. TODO: anotar con qué herramienta se escribió `registrador_v01.ino`, que se
-copió sin cambios al repo):
+`proyecto_simple/`. `registrador_v01.ino` está en C++, se escribió con ayuda de IA (Claude) en
+Arduino IDE 2.3.11, con el paquete esp32 de Espressif 3.3.12, y se probó en el dispositivo; se copió
+sin cambios al repo):
 
 - Firmware en C++ del ESP32 (`firmware/registrador_v01/registrador_v01.ino`).
 - Procesamiento en Python (`navegacion.py`) y el simulador que se usó para probarlo antes de tener
@@ -339,6 +342,7 @@ copió sin cambios al repo):
   intermedias, botón en cada cierre y apertura de puerta. Medir la altura de cada piso con
   flexómetro y llenar `datos/pisos.csv`.
 - [ ] **Fotos del montaje** en `fotos/`.
+- [ ] **Presentación** en `presentacion/`. Pendiente: se hará después del ascensor.
 - [ ] Completar los TODO de este documento y de `datos/LEEME.md`.
 
 ## 7. Plan para el segundo parcial
@@ -346,7 +350,8 @@ copió sin cambios al repo):
 - **Metro:** ≥ 3 viajes de varias estaciones, en distintos días o sentidos, con el botón en cada
   salida y llegada. Llenar `datos/estaciones.csv` (estaciones, coordenadas y distancia de cada
   tramo, con fuente verificable) y `datos/viajes.csv` (estación inicial y sentido de cada viaje).
-- **Experimento propio** que ponga a prueba un límite del sistema. TODO: elegir cuál.
+- **Experimento propio** que ponga a prueba un límite del sistema. Pendiente: se definirá después
+  del ascensor.
 - **Montaje definitivo con pilas** (4 pilas AA con interruptor) en la caja rígida.
 - **Comparación con el trazado real:** distancia y velocidad por tramo, trayectoria sobre el mapa
   frente a la línea del metro, dispersión entre viajes, con y sin barómetro.
