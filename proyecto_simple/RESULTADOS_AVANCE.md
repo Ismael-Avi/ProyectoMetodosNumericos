@@ -9,7 +9,7 @@ grabado (ver la última sección). El metro va en el segundo parcial.
 datos crudos en una microSD: acelerómetro y giroscopio a 200 Hz, barómetro a 25 Hz. Todo se procesa
 después con `navegacion.py`. Las figuras están en `resultados/`.
 
-## 1. Reposo corto (`sesion_002`, 20/11/2026)
+## 1. Reposo corto (`sesion_002`, 21/11/2026, ~10:15)
 
 **Qué se hizo:** primera prueba del firmware. 142 s en reposo sobre una mesa, alimentado por el USB
 de la laptop.
@@ -55,7 +55,7 @@ pulsador marcó el inicio y el fin; se analiza solo lo que hay entre las dos pul
 
 ## 3. Calibración de seis caras (`caras_2026-11-24`, 24/11/2026). Calibración oficial
 
-**Qué se hizo:** la protoboard fijada dentro de una caja, alimentada con un cargador de pared. Se
+**Qué se hizo:** la protoboard fijada dentro de una caja, alimentada con una power bank. Se
 apoyó la caja ~1 min en cada una de sus seis caras y después en 8 posiciones inclinadas (5° a 22°).
 Las posiciones inclinadas **no se usan para calibrar**: sirven para comprobar la calibración.
 
@@ -116,7 +116,7 @@ Chequeos que se cumplen con los datos reales:
   - sin calibrar, |g| va de 9,66 a 10,13 m/s² según la posición;
   - calibrado, va de 9,770 a 9,799 m/s² en 8 posiciones que no se usaron para calibrar (variación
     18 veces menor);
-  - aplicando la misma calibración a los reposos del 20 y el 21/11 (otros días, otro montaje) da 9,776 y
+  - aplicando la misma calibración a los reposos del 21/11 (otro día, otro montaje) da 9,776 y
     9,755 m/s².
 - **Calibraciones reproducibles:** se calibró dos veces el 24/11. La oficial es `caras_2026-11-24`
   (~18:30). La otra es `caras_2026-11-24v1` (~18:00): solo seis caras, más inclinadas (3° a 9°).

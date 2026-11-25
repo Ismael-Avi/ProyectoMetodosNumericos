@@ -20,7 +20,7 @@ Formato de los datos y configuración del sensor: [`datos/LEEME.md`](datos/LEEME
 
 | Campo | Valor |
 |---|---|
-| Fecha y hora | 20/11/2026, aprox. 17:15 (el ESP32 no tiene reloj; la carpeta no lleva fecha) |
+| Fecha y hora | 21/11/2026, aprox. 10:15 (el ESP32 no tiene reloj; la carpeta no lleva fecha) |
 | Lugar | casa de Cesar |
 | Superficie | mesa nivelada |
 | Orientación | eje z hacia arriba, inclinación de 3,0° respecto a la vertical (medida con `reposo`, sin calibrar) |
@@ -131,11 +131,11 @@ python navegacion.py reposo    datos/reposo_90min_2026-11-21_1915-2049 --botones
 | Campo | Valor |
 |---|---|
 | Fecha y hora | 24/11/2026, aprox. 18:30 (tercer intento) |
-| Lugar | TODO: completar |
+| Lugar | casa de Cesar |
 | Superficie | mesa nivelada |
 | Montaje | protoboard fijada dentro de una caja |
 | Orientación | las seis caras (~1 min cada una) y después 8 posiciones inclinadas (5° a 22°; medido con `caras`: 5,2° a 22,3°) |
-| Alimentación | cargador de pared |
+| Alimentación | power bank |
 | Duración | 746,7 s (12,4 min) |
 | Procedimiento | apoyar la caja en cada una de sus seis caras ~1 min, sin tocarla. Luego dejarla quieta en 8 posiciones inclinadas, apoyada contra algo, moviéndola entre una y otra. Sin pulsador |
 
@@ -168,8 +168,8 @@ python navegacion.py caras     datos/caras_2026-11-24
   entre posiciones baja de 0,1693 a 0,0092 m/s² (18 veces menor). Error máximo calibrado:
   0,0286 m/s².
 - Sesgo del giroscopio (promedio de las caras): (-4,503; -1,766; -0,204) °/s, con una variación
-  entre caras de 0,005 a 0,008 °/s. Coincide con el de los reposos del 20 y el 21/11.
-- Aplicando esta calibración a la aceleración media de los reposos del 20 y el 21/11 (cálculo aparte, con
+  entre caras de 0,005 a 0,008 °/s. Coincide con el de los reposos del 21/11.
+- Aplicando esta calibración a la aceleración media de los reposos del 21/11 (cálculo aparte, con
   los números de `reposo`): |g| = 9,776 m/s² en `sesion_002` (antes 10,113) y 9,755 m/s² en el
   reposo de 90 min (antes 10,099).
 
@@ -191,21 +191,22 @@ escalones de ±9,8 m/s² en un eje y después las 8 posiciones inclinadas),
   en el proyecto: faltó la cara y− y las caras quedaron inclinadas hasta 17°. El segundo (~18:00)
   está en `datos/caras_2026-11-24v1` (sección 2.4): se pudo calibrar, pero con caras inclinadas
   3° a 9° y sin posiciones inclinadas, así que no había cómo comprobar la calibración.
-  Por eso en el tercero se fijó la protoboard dentro de una caja, para apoyar el sensor sobre caras
-  planas y mejor alineadas, y se agregaron las 8 posiciones inclinadas.
+  En el segundo y en el tercero la protoboard ya iba fijada dentro de una caja. En el tercero las
+  caras quedaron menos inclinadas (2,6° a 4,8° contra 3° a 9°) y se agregaron las 8 posiciones
+  inclinadas para comprobar la calibración.
 
 ### 2.4 `caras_2026-11-24v1`: segundo intento de seis caras (comparación)
 
 | Campo | Valor |
 |---|---|
 | Fecha y hora | 24/11/2026, aprox. 18:00 |
-| Lugar | TODO: completar |
+| Lugar | casa de Cesar |
 | Superficie | mesa nivelada |
-| Montaje | TODO: completar |
+| Montaje | protoboard fijada dentro de una caja |
 | Orientación | solo las seis caras, sin posiciones inclinadas. Caras inclinadas 3,0° a 9,0° (sin calibrar) |
-| Alimentación | TODO: completar |
+| Alimentación | power bank |
 | Duración | 481,5 s (8,0 min) |
-| Procedimiento | apoyar el dispositivo en cada una de sus seis caras. Sin pulsador |
+| Procedimiento | apoyar la caja en cada una de sus seis caras. Sin pulsador |
 
 No es la calibración oficial: se usa para comprobar que la calibración se repite. Al final se volvió a
 correr `caras` sobre `caras_2026-11-24`, y `resultados/calibracion.json` quedó idéntico byte a byte
@@ -255,7 +256,7 @@ python navegacion.py caras     datos/caras_2026-11-24      (para dejar la calibr
 | Cortar la energía parte la sesión en dos carpetas | Cada encendido crea una carpeta nueva. Si la energía se corta a mitad de un experimento, quedan dos carpetas y el reloj `t_us` vuelve a empezar | TODO: completar cómo lo manejaron |
 | Deriva de la presión por el clima | En el reposo de 90 min la presión subió 0,80 hPa sin mover el dispositivo. Equivale a 9,65 m de altura falsa | Medir P0 (la presión de referencia) en el reposo inicial de cada sesión, en vez de usar un valor fijo |
 | Calibración simulada con aspecto de real | La única `resultados/calibracion.json` venía de la sesión **simulada** `caras` (ver `bitacora.csv`), y `ascensor` y `metro` la cargaban sin avisar. Con datos reales se habría aplicado un sesgo y una escala inventados | El 23/11/2026 se movió a `resultados/simulados/calibracion_simulada.json`. `navegacion.py` solo carga `resultados/calibracion.json`, que tiene que salir de una sesión real de `caras`; si falta, `ascensor` y `metro` avisan y siguen sin calibrar. Si `caras` procesa una sesión simulada, guarda en `resultados/simulados/`. Desde el 24/11/2026 `resultados/calibracion.json` sale de la sesión real `caras_2026-11-24` |
-| Caras inclinadas o incompletas en la calibración | En el primer intento faltó la cara y− y las caras quedaron inclinadas hasta 17°. En el segundo (`caras_2026-11-24v1`), inclinadas 3° a 9° y sin posiciones para comprobar | Fijar la protoboard dentro de una caja y apoyar la caja en sus caras; agregar posiciones inclinadas. El tercer intento (`caras_2026-11-24`) es la calibración oficial |
+| Caras inclinadas o incompletas en la calibración | En el primer intento faltó la cara y− y las caras quedaron inclinadas hasta 17°. En el segundo (`caras_2026-11-24v1`), inclinadas 3° a 9° y sin posiciones para comprobar | Fijar la protoboard dentro de una caja y apoyar la caja en sus caras (desde el segundo intento); dejar las caras lo más verticales posible y agregar posiciones inclinadas para comprobar. El tercer intento (`caras_2026-11-24`) es la calibración oficial |
 | Calentamiento inicial del chip | La temperatura del BMP280 sube ~1,1 °C en los primeros ~2 min y luego baja hasta estabilizarse hacia el minuto 18–20. En ese tramo el sesgo de gx cambia más | Se midió con la deriva por bloques de `reposo`. Se mide el sesgo en el reposo inicial de cada sesión. TODO: decidir si se enciende el dispositivo ~20 min antes de los experimentos |
 
 ## 4. Decisiones y por qué

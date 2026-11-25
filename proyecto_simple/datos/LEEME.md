@@ -13,10 +13,10 @@ cercano, sin calibrar).
 
 | Carpeta | Fecha y hora | Experimento | Duración | Muestras IMU | Muestras barómetro | Perdidas (IMU / baro) | Frecuencia real IMU (inicio / final) | Frecuencia real baro (inicio / final) | Alimentación | Orientación |
 |---|---|---|---|---|---|---|---|---|---|---|
-| `sesion_002/` | 20/11/2026, aprox. 17:15 | reposo corto, primera prueba del firmware | 142,4 s (2,4 min) | 28 483 | 3 561 | 0 / 0 | 200,000 / 200,000 Hz | 25,000 / 25,000 Hz | USB de la laptop | sobre una mesa nivelada (casa de Cesar), eje z hacia arriba, inclinada 3,0° |
+| `sesion_002/` | 21/11/2026, aprox. 10:15 | reposo corto, primera prueba del firmware | 142,4 s (2,4 min) | 28 483 | 3 561 | 0 / 0 | 200,000 / 200,000 Hz | 25,000 / 25,000 Hz | USB de la laptop | sobre una mesa nivelada (casa de Cesar), eje z hacia arriba, inclinada 3,0° |
 | `reposo_90min_2026-11-21_1915-2049/` | 21/11/2026, 19:15 a 20:49 | reposo largo (90 min) | 5694,3 s (94,9 min) | 1 138 860 | 142 358 | 0 / 0 | 200,000 / 200,000 Hz | 25,000 / 25,000 Hz | power bank | sobre una mesa nivelada (casa de Ismael), eje z hacia arriba, protoboard inclinada 9,2° |
-| `caras_2026-11-24v1/` | 24/11/2026, aprox. 18:00 | seis caras, segundo intento (comparación; no es la calibración oficial) | 481,5 s (8,0 min) | 96 306 | 12 039 | 0 / 0 | 200,000 / 200,000 Hz | 25,000 / 25,000 Hz | TODO: completar | sobre una mesa nivelada; solo las seis caras, inclinadas 3,0° a 9,0° |
-| `caras_2026-11-24/` | 24/11/2026, aprox. 18:30 | seis caras + 8 posiciones inclinadas (**calibración oficial**) | 746,7 s (12,4 min) | 149 332 | 18 667 | 0 / 0 | 200,000 / 200,000 Hz | 25,000 / 25,000 Hz | cargador de pared | sobre una mesa nivelada; protoboard fijada dentro de una caja; seis caras y 8 posiciones inclinadas de 5,2° a 22,3° |
+| `caras_2026-11-24v1/` | 24/11/2026, aprox. 18:00 | seis caras, segundo intento (comparación; no es la calibración oficial) | 481,5 s (8,0 min) | 96 306 | 12 039 | 0 / 0 | 200,000 / 200,000 Hz | 25,000 / 25,000 Hz | power bank | sobre una mesa nivelada (casa de Cesar); protoboard fijada dentro de una caja; solo las seis caras, inclinadas 3,0° a 9,0° |
+| `caras_2026-11-24/` | 24/11/2026, aprox. 18:30 | seis caras + 8 posiciones inclinadas (**calibración oficial**) | 746,7 s (12,4 min) | 149 332 | 18 667 | 0 / 0 | 200,000 / 200,000 Hz | 25,000 / 25,000 Hz | power bank | sobre una mesa nivelada (casa de Cesar); protoboard fijada dentro de una caja; seis caras y 8 posiciones inclinadas de 5,2° a 22,3° |
 
 Otros datos de `verificar`:
 
@@ -32,12 +32,12 @@ Otros datos de `verificar`:
   En la tarjeta se llamaba `sesion_001`.
 - `caras_2026-11-24`: periodo medio del IMU 5000,0 µs, jitter 1,1 µs (mín. 4994, máx. 5006 µs). Sin
   pulsaciones (no se usó el pulsador). `caras` encuentra 14 tramos quietos: las 6 caras y 8
-  posiciones inclinadas. La carpeta se renombró a mano con la fecha. TODO: anotar el nombre
-  `sesion_NNN` original.
+  posiciones inclinadas. La carpeta se renombró a mano con la fecha. Nombre `sesion_NNN`
+  original: no registrado.
 - `caras_2026-11-24v1`: periodo medio del IMU 5000,0 µs, jitter 1,5 µs (mín. 4993, máx. 5007 µs). Sin
   pulsaciones. `caras` encuentra 8 tramos quietos: las 6 caras y 2 repeticiones (z+ y x+). Segundo
-  intento de la calibración; el primero se descartó y no está en el proyecto. TODO: anotar el
-  nombre `sesion_NNN` original.
+  intento de la calibración; el primero se descartó y no está en el proyecto. Nombre `sesion_NNN`
+  original: no registrado.
 
 Los archivos que vienen de la microSD tienen fecha de modificación 01/01/1980, porque el ESP32 no
 sabe la fecha. La fecha y la hora reales se anotan en `../bitacora.md`.
