@@ -1,6 +1,6 @@
 # Entregables del primer parcial
 
-Navegación inercial en el Metro de Quito. Métodos Numéricos, EPN.
+Navegación inercial sin GPS. Métodos Numéricos, EPN.
 Alcance del avance: **hasta el ascensor, solo con datos reales.**
 
 Todas las rutas son relativas a la raíz del repositorio.
@@ -28,11 +28,6 @@ Material de apoyo:
 | Guía de estudio para los integrantes | `proyecto_simple/GUIA_ESTUDIO.md` |
 | Representación numérica (tipos de dato en cada etapa) | `proyecto_simple/representacion_numerica.md` |
 
-**No forman parte de la entrega:** `procesamiento/` y `firmware/` en la raíz del repositorio. Son la
-primera versión, hecha con datos simulados antes de tener el hardware. El firmware de `firmware/`
-(PlatformIO) nunca se probó en el dispositivo. Las sesiones simuladas tampoco se usan en los
-resultados del avance: están en `proyecto_simple/resultados/simulados/` solo como prueba del código.
-
 ## Hasta dónde llegamos
 
 **Nivel alcanzado: 4.** Validación en el ascensor frente a las alturas medidas con flexómetro, con
@@ -45,10 +40,9 @@ el error cuantificado.
 | 3 | Reposo (`resultados/reposo_90min_2026-11-21_1915-2049_reposo.png` y `sesion_002_reposo.png`), deriva (`reposo_90min_2026-11-21_1915-2049_deriva.png`), seis caras (`caras_2026-11-24_caras.png`, `caras_2026-11-24v1_caras.png`, `calibracion.json`) y convergencia (`metodos_convergencia.png`) |
 | **4** | `proyecto_simple/datos/pisos.csv` (alturas con flexómetro) + `resultados/ascensor_2026-11-26_ascensor.png` + la tabla de errores por desnivel (`resultados/ascensor_2026-11-26_ascensor.txt` y `RESULTADOS_AVANCE.md`, sección 5.2) |
 
-Lo que sigue (segundo parcial) no forma parte de este nivel: el metro (el comando `metro` existe,
-pero solo se probó con sesiones simuladas) y el experimento propio.
+**Etapas pendientes (segundo parcial):** el Metro de Quito y el experimento propio.
 
-Detalle de cada requisito, por etapa del proyecto (`CONTEXTO_PROYECTO.md`, sección 1):
+Detalle de cada requisito, por etapa:
 
 ### Etapa 1: prototipo y caracterización
 

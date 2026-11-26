@@ -15,7 +15,6 @@ LSB_POR_G = {2: 16384.0, 4: 8192.0, 8: 4096.0, 16: 2048.0}
 LSB_POR_DPS = {250: 131.0, 500: 65.5, 1000: 32.8, 2000: 16.4}
 R_GAS = 8.314462618
 M_AIRE = 0.0289644
-RADIO_TIERRA = 6371000.0
 
 VENTANA_QUIETO_S = 0.5
 UMBRAL_ACC = 0.06
@@ -26,10 +25,6 @@ CARA_MINIMA_S = 10.0
 QUIETO_MINIMO_S = 3.0
 MARGEN_CARA_S = 1.0
 TAU_FILTRO_S = 3.0
-VENTANA_ARRANQUE_S = 5.0
-SUAVIZADO_BARO_S = 10.0
-VELOCIDAD_MIN_PENDIENTE = 1.0
-SENO_MAX = 0.1
 REBOTE_BOTON_S = 1.0
 BLOQUE_DERIVA_S = 600.0
 OPCIONES = {"botones": False, "recorte": 0.0, "hasta": None, "recorridos": None}
@@ -45,11 +40,8 @@ PRUEBA_RUIDO = 0.02
 CARPETA = os.path.dirname(os.path.abspath(__file__))
 RESULTADOS = os.path.join(CARPETA, "resultados")
 BITACORA = os.path.join(CARPETA, "bitacora.csv")
-CALIBRACION = os.path.join(RESULTADOS, "calibracion.json")   # solo calibracion REAL; es la unica que se usa
-CALIBRACION_SIMULADA = os.path.join(RESULTADOS, "simulados", "calibracion_simulada.json")   # nunca se carga
+CALIBRACION = os.path.join(RESULTADOS, "calibracion.json")   # la deja "caras"; la usa "ascensor"
 PISOS = os.path.join(CARPETA, "datos", "pisos.csv")
-ESTACIONES = os.path.join(CARPETA, "datos", "estaciones.csv")
-VIAJES = os.path.join(CARPETA, "datos", "viajes.csv")
 COLUMNAS_BITACORA = ["fecha_proceso", "comando", "sesion", "firmware", "duracion_s", "recorte_s", "desplazamiento_m",
                      "vel_max_ms", "acel_max_ms2", "duracion_tramos_s", "resultado", "condiciones"]
 
@@ -59,7 +51,6 @@ USO = """Uso:
   python navegacion.py caras     datos/sesion_NNN
   python navegacion.py metodos
   python navegacion.py ascensor  datos/sesion_NNN
-  python navegacion.py metro     datos/sesion_NNN [datos/sesion_MMM ...]
 Opciones (para cualquier comando con sesion):
   --botones      usar solo desde la primera hasta la ultima pulsacion del boton
   --recorte N    quitar N segundos al inicio y al final (despues de --botones si se usan los dos)
@@ -120,8 +111,6 @@ def leer_sesion(carpeta):
     s["rebotes"] = len(eventos) - len(ev)
     # pulsos tal como salieron del firmware, para saber cuales de los corregidos son originales
     s["eventos_csv"] = (pd.read_csv(os.path.join(carpeta, "eventos.csv"))["t_us"].to_numpy() - t0) / 1e6
-    if meta.get("firmware_version") == "simulador":
-        print("AVISO: sesion SIMULADA (solo sirve para probar el codigo)")
     return recortar(s)
 
 
@@ -192,9 +181,8 @@ def agregar_bitacora(fila):
 
 
 def fila_sesion(s, comando):
-    simulado = s["meta"].get("firmware_version") == "simulador"
     return {"comando": comando, "sesion": s["nombre"], "firmware": s["meta"].get("firmware_version", ""),
-            "duracion_s": f"{s['duracion']:.1f}", "recorte_s": s["recorte"], "condiciones": "SIMULADO" if simulado else ""}
+            "duracion_s": f"{s['duracion']:.1f}", "recorte_s": s["recorte"]}
 
 
 def rectangulo(t, y):
@@ -256,10 +244,9 @@ def reposo_inicial(s):
 
 
 def cargar_calibracion(r):
-    # Solo se usa la calibracion de una sesion real de caras. La de la sesion simulada se guarda
-    # aparte (CALIBRACION_SIMULADA) y no se carga nunca, para que no pase por un resultado real.
+    # La calibracion la deja el comando "caras" (sesion de seis caras).
     if not os.path.exists(CALIBRACION):
-        decir(r, "AVISO: no existe resultados/calibracion.json (correr 'caras' con una sesion real); "
+        decir(r, "AVISO: no existe resultados/calibracion.json (correr antes 'caras'); "
                  "se sigue SIN CALIBRAR: sesgo 0 y escala 1")
         return np.zeros(3), np.ones(3)
     with open(CALIBRACION, encoding="utf-8") as f:
@@ -520,15 +507,11 @@ def comando_caras(carpeta):
         giro = np.degrees(np.array([quietos[k][3] for k in caras.values()]))
         decir(r, f"Sesgo del giroscopio (promedio de las caras, solo informativo): {np.round(giro.mean(axis=0), 3)} °/s; "
                  f"variacion entre caras {np.round(giro.std(axis=0), 3)} °/s")
-        # Una sesion simulada no debe dejar una calibracion que parezca real: va a otra carpeta.
-        simulada = s["meta"].get("firmware_version") == "simulador"
-        destino = CALIBRACION_SIMULADA if simulada else CALIBRACION
-        os.makedirs(os.path.dirname(destino), exist_ok=True)
-        with open(destino, "w", encoding="utf-8") as f:
+        os.makedirs(RESULTADOS, exist_ok=True)
+        with open(CALIBRACION, "w", encoding="utf-8") as f:
             json.dump({"sesion": s["nombre"], "g": G, "sesgo": list(sesgo), "escala": list(escala),
                        "sesgo_giro_dps_informativo": list(giro.mean(axis=0))}, f, indent=2)
-        decir(r, f"Guardado en {os.path.relpath(destino, CARPETA).replace(os.sep, '/')}"
-                 + (" (sesion SIMULADA: no se usa en ascensor ni metro)" if simulada else ""))
+        decir(r, f"Guardado en {os.path.relpath(CALIBRACION, CARPETA).replace(os.sep, '/')}")
         fila["resultado"] = f"sesgo {np.round(sesgo, 4)} m/s²; escala {np.round(escala, 5)}"
     decir(r, f"--- Prueba independiente: tramos quietos que no se usaron para calibrar (minimo {QUIETO_MINIMO_S:.0f} s) ---")
     if len(extras) == 0:
@@ -855,141 +838,6 @@ def comando_ascensor(carpeta):
     agregar_bitacora(fila)
 
 
-def referencia_viaje(nombre):
-    estaciones = pd.read_csv(ESTACIONES)
-    if len(estaciones) == 0 or not os.path.exists(VIAJES):
-        return None
-    viajes = pd.read_csv(VIAJES)
-    fila = viajes[viajes["sesion"] == nombre]
-    if len(fila) == 0:
-        return None
-    estaciones = estaciones.sort_values("orden").reset_index(drop=True)
-    sentido = int(fila["sentido"].iloc[0])
-    i = int(np.where(estaciones["estacion"] == fila["estacion_inicial"].iloc[0])[0][0])
-    orden = list(range(i, len(estaciones))) if sentido > 0 else list(range(i, -1, -1))
-    ref = estaciones.iloc[orden].reset_index(drop=True)
-    largos = []
-    for k in range(len(ref) - 1):
-        largos.append(ref["distancia_al_siguiente_m"].iloc[k] if sentido > 0 else ref["distancia_al_siguiente_m"].iloc[k + 1])
-    ref["largo_tramo"] = largos + [np.nan]
-    return ref
-
-
-def analizar_viaje(carpeta, sesgo, escala, r):
-    s = leer_sesion(carpeta)
-    t = s["t"]
-    decir(r, f"--- Viaje {s['nombre']} ({s['duracion']:.1f} s, {texto_recorte(s)}) ---")
-    acc = (s["acc"] - sesgo) / escala
-    rep = reposo_inicial(s)
-    g_vec = acc[rep].mean(axis=0)
-    arriba = g_vec / np.linalg.norm(g_vec)
-    sesgo_giro = s["giro"][rep].mean(axis=0)
-    decir(r, f"Sesgo del giroscopio medido en el reposo inicial ({t[rep][0]:.1f} a {t[rep][-1]:.1f} s): {np.round(np.degrees(sesgo_giro), 3)} °/s (se resta)")
-    rumbo = trapecio(t, (s["giro"] - sesgo_giro) @ arriba)
-    mov, fuente = mascara_movimiento(s)
-    decir(r, f"Paradas (ZUPT) segun {fuente}")
-    viajes = tramos(mov)
-    i0 = viajes[0][0]
-    d = acc[(t >= t[i0]) & (t <= t[i0] + VENTANA_ARRANQUE_S)].mean(axis=0) - g_vec
-    d = d - (d @ arriba) * arriba
-    adelante = d / np.linalg.norm(d)
-    decir(r, f"Direccion 'adelante' (primer arranque) en ejes del dispositivo: {np.round(adelante, 3)}")
-    a_adelante = (acc - g_vec) @ adelante
-    v_sin_zupt = trapecio(t, a_adelante)
-    v = velocidad_zupt(t, a_adelante, mov, trapecio)
-    hb, hb_imu = altura_baro_en_imu(s, rep)
-    n = max(1, int(SUAVIZADO_BARO_S / np.median(np.diff(t))))
-    h_suave = np.convolve(hb_imu, np.ones(n) / n, mode="same")
-    dhdt = np.gradient(h_suave, t)
-    seno = np.clip(np.where(v > VELOCIDAD_MIN_PENDIENTE, dhdt / np.maximum(v, VELOCIDAD_MIN_PENDIENTE), 0), -SENO_MAX, SENO_MAX)
-    v_baro = velocidad_zupt(t, a_adelante - G * seno, mov, trapecio)
-    dist = trapecio(t, v)
-    dist_baro = trapecio(t, v_baro)
-    filas = []
-    for k, (j0, j1) in enumerate(viajes):
-        dur = t[j1 - 1] - t[j0]
-        filas.append({"tramo": k, "duracion": dur, "dist": dist[j1 - 1] - dist[j0], "dist_baro": dist_baro[j1 - 1] - dist_baro[j0],
-                      "v_max": v_baro[j0:j1].max(), "a_max": np.abs(a_adelante[j0:j1]).max(), "subida": hb_imu[j1 - 1] - hb_imu[j0]})
-    tabla = pd.DataFrame(filas)
-    tabla["v_media"] = tabla["dist_baro"] / tabla["duracion"]
-    ref = referencia_viaje(s["nombre"])
-    factor = 1.0
-    if ref is not None and len(ref) > len(tabla) and ref["largo_tramo"].iloc[:len(tabla)].notna().all():
-        tabla["estacion"] = [f"{ref['estacion'].iloc[k]} -> {ref['estacion'].iloc[k + 1]}" for k in range(len(tabla))]
-        tabla["par"] = [" / ".join(sorted([ref["estacion"].iloc[k], ref["estacion"].iloc[k + 1]])) for k in range(len(tabla))]
-        tabla["real"] = ref["largo_tramo"].iloc[:len(tabla)].to_numpy(float)
-        tabla["error_sin_baro"] = tabla["dist"] - tabla["real"]
-        tabla["error_con_baro"] = tabla["dist_baro"] - tabla["real"]
-        factor = np.sum(tabla["dist_baro"] * tabla["real"]) / np.sum(tabla["dist_baro"] ** 2)
-        tabla["error_ajustado"] = tabla["dist_baro"] * factor - tabla["real"]
-        decir(r, f"Ajuste por distancia conocida: factor de escala {factor:.4f} (minimos cuadrados con todos los tramos)")
-    else:
-        decir(r, "Sin referencia (estaciones.csv / viajes.csv vacios para esta sesion): no se calcula error de distancia")
-    decir(r, tabla.drop(columns="par", errors="ignore").round(2).to_string(index=False))
-    decir(r, f"Distancia total: {dist[-1]:.1f} m sin baro, {dist_baro[-1]:.1f} m con baro; sin ZUPT la velocidad final queda en {v_sin_zupt[-1]:.2f} m/s")
-    v_mapa = v_baro * factor
-    x = trapecio(t, v_mapa * np.cos(rumbo))
-    y = trapecio(t, v_mapa * np.sin(rumbo))
-    xy_real = None
-    if ref is not None and ref["lat"].notna().sum() > len(tabla):
-        lat0, lon0 = np.radians(ref["lat"].iloc[0]), np.radians(ref["lon"].iloc[0])
-        xr = RADIO_TIERRA * (np.radians(ref["lon"].to_numpy(float)) - lon0) * np.cos(lat0)
-        yr = RADIO_TIERRA * (np.radians(ref["lat"].to_numpy(float)) - lat0)
-        fin1 = viajes[0][1] - 1
-        giro = np.arctan2(yr[1], xr[1]) - np.arctan2(y[fin1], x[fin1])
-        x, y = x * np.cos(giro) - y * np.sin(giro), x * np.sin(giro) + y * np.cos(giro)
-        xy_real = (xr, yr)
-        errores = [np.hypot(x[j1 - 1] - xr[k + 1], y[j1 - 1] - yr[k + 1]) for k, (j0, j1) in enumerate(viajes)]
-        decir(r, "Error de posicion en cada estacion de llegada (m), alineando el primer tramo: " + ", ".join(f"{e:.1f}" for e in errores))
-    fila = fila_sesion(s, "metro")
-    fila.update({"desplazamiento_m": f"{dist_baro[-1]:.1f}", "vel_max_ms": f"{v_baro.max():.2f}",
-                 "acel_max_ms2": f"{np.abs(a_adelante[mov]).max():.2f}",
-                 "duracion_tramos_s": ";".join(f"{d:.1f}" for d in tabla["duracion"]),
-                 "resultado": f"{len(tabla)} tramos; giro total {np.degrees(rumbo[-1]):.1f}°"})
-    agregar_bitacora(fila)
-    return {"s": s, "t": t, "v": v, "v_baro": v_baro, "rumbo": rumbo, "x": x, "y": y, "tabla": tabla, "real": xy_real}
-
-
-def comando_metro(carpetas):
-    r = []
-    decir(r, "=== Metro ===")
-    sesgo, escala = cargar_calibracion(r)
-    viajes = [analizar_viaje(c, sesgo, escala, r) for c in carpetas]
-    if len(viajes) > 1:
-        decir(r, "--- Dispersion de la distancia de cada tramo entre viajes (con barometro) ---")
-        todas = pd.concat([v["tabla"] for v in viajes])
-        if all("par" in v["tabla"] for v in viajes):
-            clave = todas["par"]
-        else:
-            clave = "tramo " + todas["tramo"].astype(str)
-            decir(r, "AVISO: sin viajes.csv los tramos se emparejan por numero; vale solo si todos los viajes van en el mismo sentido y desde la misma estacion")
-        resumen = todas.groupby(clave)[["dist", "dist_baro"]].agg(["count", "mean", "std"])
-        decir(r, resumen.round(2).to_string())
-    fig, ax = plt.subplots(len(viajes), 2, figsize=(12, 3.2 * len(viajes)), squeeze=False)
-    for k, v in enumerate(viajes):
-        ax[k, 0].plot(v["t"], v["v"], lw=0.8, label="ZUPT sin baro")
-        ax[k, 0].plot(v["t"], v["v_baro"], lw=0.8, label="ZUPT + pendiente con baro")
-        marcar_eventos(ax[k, 0], v["s"]["eventos"])
-        ax[k, 0].set(xlabel="tiempo (s)", ylabel="velocidad (m/s)", title=v["s"]["nombre"])
-        ax[k, 0].legend(fontsize=8)
-        ax[k, 1].plot(v["t"], np.degrees(v["rumbo"]), lw=0.8, color="k")
-        marcar_eventos(ax[k, 1], v["s"]["eventos"])
-        ax[k, 1].set(xlabel="tiempo (s)", ylabel="rumbo girado (°)")
-    guardar_figura(fig, "metro_velocidad_rumbo.png")
-    fig, ax = plt.subplots(figsize=(8, 7))
-    for v in viajes:
-        ax.plot(v["x"], v["y"], lw=1.2, label=v["s"]["nombre"])
-    reales = [v["real"] for v in viajes if v["real"] is not None]
-    if reales:
-        ax.plot(reales[0][0], reales[0][1], "ks--", lw=0.8, label="estaciones reales")
-    ax.set(xlabel="x (m)" if reales else "x (m), eje = direccion inicial", ylabel="y (m)",
-           title="Trayectoria 2D estimada" + ("" if reales else " (sin coordenadas reales)"))
-    ax.set_aspect("equal", adjustable="datalim")
-    ax.legend(fontsize=8)
-    guardar_figura(fig, "metro_trayectoria.png")
-    guardar_reporte("metro.txt", r)
-
-
 def main():
     sys.stdout.reconfigure(encoding="utf-8")
     args = sys.argv[1:]
@@ -1013,8 +861,6 @@ def main():
         comando_metodos()
     elif len(args) == 2 and args[0] in comandos:
         comandos[args[0]](args[1])
-    elif len(args) >= 2 and args[0] == "metro":
-        comando_metro(args[1:])
     else:
         print(USO)
 

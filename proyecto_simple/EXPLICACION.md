@@ -23,7 +23,7 @@ en unidades SI:
   dicen en el reporte (`texto_eventos`).
 
 Ignora cualquier campo extra de meta.json y las columnas mx, my, mz (vacías: el MPU-6500 no tiene
-magnetómetro). Si `firmware_version` es "simulador", avisa.
+magnetómetro).
 
 **`bmp280(adc_T, adc_P, c)`** es la fórmula de la hoja de datos de Bosch copiada tal cual. Cada chip
 trae de fábrica 12 coeficientes (`dig_T1`…`dig_P9`), que el firmware guarda en meta.json. Primero se
@@ -148,23 +148,18 @@ Con la sesión real `caras_2026-11-24` (6 caras + 8 posiciones inclinadas de 5°
 calibrar va de 9,661 a 10,127 m/s² según la posición; calibrado, de 9,770 a 9,799 m/s². La
 desviación estándar entre las 8 posiciones bajó de 0,1693 a 0,0092 m/s² (18 veces menor) y el error
 máximo quedó en 0,029 m/s². La calibración oficial es `resultados/calibracion.json`, que sale de esa
-sesión. (Antes, con una sesión sintética, la variación había bajado de 0,078 a 0,0006 m/s²; con
-datos reales queda más: las caras reales no quedan perfectamente verticales y el sensor puede tener
-errores que el modelo de sesgo + escala no incluye, por ejemplo ejes no perfectamente
+sesión. (No baja a cero porque las caras reales no quedan perfectamente verticales y el sensor
+puede tener errores que el modelo de sesgo + escala no incluye, por ejemplo ejes no perfectamente
 perpendiculares.)
 
 Si la sesión no tiene las 6 caras, no se calibra, pero se revisan todos sus tramos quietos con la
 `calibracion.json` que ya existe (la real). Así se puede grabar otro día una sesión solo con inclinaciones y
 comprobar la calibración vieja.
 
-Si la sesión de caras es simulada (`firmware_version` = `simulador`), el resultado se guarda en
-`resultados/simulados/calibracion_simulada.json`. `cargar_calibracion` solo lee
-`resultados/calibracion.json`, así que una calibración simulada nunca se aplica a datos reales.
-
 ## 5. Ascensor (`comando_ascensor`)
 
 > Probado con la sesión real `ascensor_2026-11-26` (resultados en `RESULTADOS_AVANCE.md`,
-> sección 5) y con la simulada `datos/simulados/ascensor`.
+> sección 5).
 
 1. Calibra con caras. En el reposo inicial, la aceleración promedio apunta hacia arriba (el
    acelerómetro quieto mide +g hacia arriba). Su dirección `arriba` también corrige si la caja está
@@ -220,38 +215,3 @@ con ellos solos el error sale parecido (0,121 m), así que corregir los pulsos n
 resultado. Cada recorrido con PB da una estimación de PB→1 = |desnivel| − (distancia de cinta del
 piso 1 al otro piso): ~5,5 m con el barómetro y ~5,3 m con el acelerómetro, contra 4,90 m de la
 cinta.
-
-Lo que salió con el ascensor simulado (pisos sintéticos, solo para probar): sin correcciones, ~12 m
-de error; restando el sesgo, ~5 m; con ZUPT, 0,05 m. La fusión dio 0,20 m porque el barómetro
-simulado deriva 0,35 m con el clima durante la sesión. El ZUPT corrige la velocidad, y el barómetro
-la altura a largo plazo, pero también mete su deriva.
-
-## 6. Metro (`analizar_viaje`, `comando_metro`)
-
-> **Todavía solo con datos simulados** (ruta sintética, `datos/simulados/metro_*`). Los resultados
-> están en `resultados/simulados/`.
-
-1. Calibra, mide `arriba` y el **sesgo del giroscopio** en el reposo inicial y lo resta.
-2. **Rumbo:** velocidad angular alrededor de la vertical = (ω − sesgo)·arriba; integrada con
-   trapecio da cuánto ha girado el tren desde el inicio.
-3. **Dirección "adelante":** en el primer arranque, lo único que acelera es el tren, y hacia
-   adelante. Se promedia (a − gravedad) en los primeros 5 s, se le quita la parte vertical y se
-   normaliza. Así no importa cómo esté puesta la caja.
-4. Velocidad = integral de la aceleración hacia adelante con ZUPT en cada estación. Distancia =
-   integral de la velocidad.
-5. **Pendiente con barómetro:** en una subida, el eje "adelante" se inclina y mide también g·sen(θ).
-   sen(θ) = (dh/dt)/v, con h del barómetro suavizado 10 s. Se resta g·sen(θ) y se integra de nuevo.
-   Resultado en la simulación: **empeora un poco** (error RMS de ~3,5 m por tramo contra ~1 m sin barómetro),
-   porque derivar el barómetro amplifica su ruido y el ZUPT ya quita casi todo el efecto de la
-   pendiente. Con datos reales hay que ver cuál de los dos gana.
-6. Tabla por tramo (par de pulsos): duración, distancia sin y con barómetro, velocidad máxima y
-   media, aceleración máxima, desnivel.
-7. **Distancia conocida:** si `estaciones.csv` y `viajes.csv` tienen datos, se calcula el error de
-   cada tramo y un factor de escala por mínimos cuadrados, k = Σ(d·L)/Σ(d²), que se aplica a la
-   velocidad. No se fuerza cada tramo a su largo exacto, porque así el error saldría 0 por
-   construcción y no mediría nada.
-8. **Mapa:** x = ∫v·cos(rumbo), y = ∫v·sin(rumbo). Si hay coordenadas, se pasan a metros
-   (x = R·Δlon·cos(lat0), y = R·Δlat), se gira la trayectoria para que el primer tramo apunte a la
-   segunda estación y se mide la distancia a cada estación real.
-9. **Varios viajes:** media y desviación estándar de la distancia de cada tramo. Con `viajes.csv`
-   se emparejan por estaciones (A–B y B–A juntas); sin él, por número de tramo.

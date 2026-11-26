@@ -25,7 +25,7 @@ Pasar de entero a texto y de vuelta no pierde nada: el CSV guarda los enteros ex
    giroscopio = 1/65,5 °/s = 0,015 °/s. Es mucho menor que el ruido (0,016 m/s² y 0,065 °/s), así que
    casi no importa. El sesgo del giroscopio (-4,5 °/s = -294 LSB) es mucho mayor que 1 LSB.
 3. **Saturación.** Con ±4 g el acelerómetro se satura en ±39 m/s², y con ±500 °/s el giroscopio en
-   ±500 °/s. Un ascensor o un metro no llegan ni a 0,2 g; un golpe fuerte sí podría saturar.
+   ±500 °/s. Un ascensor no llega ni a 0,2 g; un golpe fuerte sí podría saturar.
 4. **Cuantización del barómetro.** En los datos, `adc_P` cambia de 2 en 2 (19 bits útiles con ×8)
    y `adc_T` de 16 en 16 (16 bits con ×1). En unidades: un paso de presión = 0,33 Pa ≈ **4 cm de
    altura**, y un paso de temperatura = 0,0049 °C. El ruido real de la presión (~2,8 Pa) es mayor

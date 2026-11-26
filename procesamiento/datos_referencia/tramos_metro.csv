@@ -1,6 +1,0 @@
-# Longitud REAL de cada tramo entre estaciones seguidas del Metro de Quito, en metros (a lo largo
-# de la vía, no en línea recta).
-# TODO: llenar con una fuente verificable (datos oficiales del Metro de Quito u OpenStreetMap) y
-#       anotar la fuente. Está VACÍO a propósito: no se inventan distancias.
-# Formato de cada fila:  desde,hasta,longitud_m,fuente     (nombres como en estaciones_metro.csv)
-desde,hasta,longitud_m,fuente

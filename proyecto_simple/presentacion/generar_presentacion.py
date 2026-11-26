@@ -19,7 +19,7 @@ from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
 from pptx.enum.shapes import MSO_SHAPE
 from pptx.chart.data import CategoryChartData
-from pptx.enum.chart import XL_CHART_TYPE, XL_LEGEND_POSITION, XL_LABEL_POSITION
+from pptx.enum.chart import XL_CHART_TYPE, XL_LEGEND_POSITION
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
 RAIZ = os.path.dirname(AQUI)
@@ -174,13 +174,12 @@ def main():
                                   "Métodos Numéricos, EPN · Noviembre de 2026"], tam=16, color=BLANCO)
     imagen(s, os.path.join(FOTOS, "02_caja_cerrada.jpeg"), 8.6, 0.6, 4.2, 6.3)
     s.notes_slide.notes_text_frame.text = (
-        "Objetivo final: reconstruir viajes en el Metro de Quito sin GPS. Este parcial cubre el "
-        "dispositivo, su caracterización y la validación en un ascensor. Todo con datos reales; "
-        "las simulaciones solo sirvieron para probar el código.")
+        "Objetivo: estimar velocidad y posición sin GPS. Este parcial cubre el dispositivo, su "
+        "caracterización y la validación en un ascensor, todo con datos reales.")
 
     # 2. El problema
     s = prs.slides.add_slide(blanco)
-    titulo(s, "El problema: medir aceleración e integrar", "Bajo tierra no hay GPS; el sensor solo mide aceleración y giro")
+    titulo(s, "El problema: medir aceleración e integrar", "Sin GPS, el sensor solo mide aceleración y giro")
     pasos = [("aceleración", "lo que mide el sensor"), ("velocidad", "∫ a dt"), ("posición", "∫ v dt")]
     for i, (n, d) in enumerate(pasos):
         x = 0.8 + i * 4.1
@@ -363,19 +362,16 @@ def main():
               ("38 MB/h", "en la microSD (tamaño real de nuestros archivos): 90 min ocupan ~58 MB"),
               ("71,6 min", "es cuando se habría desbordado t_us con 32 bits; con 64 bits no hay límite"),
               ("~1 min", "sin correcciones, la deriva ya deja errores de decenas de metros: es el límite real"),
-              ("7 km → 22 m", "metro de 22 km (estimación): sin ZUPT contra ZUPT en cada estación"),
+              ("±4 g", "rango del acelerómetro: un golpe al apoyar la caja llegó a ~30 m/s² (límite: 39 m/s²)"),
               ("26–39 h", "duraría la power bank de 5000 mAh (consumo estimado, no medido); la microSD de 32 GB, ~800 h")]
     for i, (n, d) in enumerate(celdas):
         x = 0.6 + (i % 3) * 4.15
         y = 1.75 + (i // 3) * 2.6
         tarjeta(s, x, y, 3.85, 2.3, n, d, color_num=(AMBAR if i % 2 == 0 else VERDE), tam_num=30)
     s.notes_slide.notes_text_frame.text = (
-        "Como registrador cumple 90 min. Lo que limita es la deriva al navegar. Estimación del metro "
-        "(guia/estimar_error_metro.py): sin ZUPT, 7,3 km de error al final; con ZUPT, ~22 m, dominado "
-        "por el error de escala (0,094 %), que se corrige con la distancia conocida entre estaciones. "
-        "En un registro largo se acaba primero la batería (26–39 h, con 80–120 mA estimados) y mucho "
-        "después la tarjeta (~800 h). "
-        "Detalle en GUIA_ESTUDIO.md, secciones d y e.")
+        "Como registrador cumple 90 min. Lo que limita es la deriva al navegar. En un registro largo "
+        "se acaba primero la batería (26–39 h, con 80–120 mA estimados) y mucho después la tarjeta "
+        "(~800 h). Detalle en GUIA_ESTUDIO.md, sección d.")
 
     # 12. Plan
     s = prs.slides.add_slide(blanco)

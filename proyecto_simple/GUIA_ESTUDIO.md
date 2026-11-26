@@ -16,7 +16,7 @@ Todos los números son nuestros. Al lado de cada uno va de dónde sale, con esta
 | [MET] | `resultados/metodos.txt` |
 | [ASC] | `resultados/ascensor_2026-11-26_ascensor.txt` |
 | [RA] | `RESULTADOS_AVANCE.md` |
-| [EST] | `guia/estimar_error_metro.py` (estimación, no medición) |
+| [EST] | `guia/estimar_error_metro.py` (cálculo teórico con los números medidos, no es una medición) |
 | [MPU] | InvenSense, *MPU-6500 Product Specification* (tablas del acelerómetro y del giroscopio) |
 | [BMP] | Bosch, *BMP280 datasheet* BST-BMP280-DS001 (tabla de sobremuestreo de presión, sección 3.3.1) |
 | [FW] | `firmware/registrador_v01/registrador_v01.ino` |
@@ -128,7 +128,7 @@ docente, con la idea de la respuesta.
   2. *¿Por qué no da ±9,77 exacto?* Por el sesgo y la escala del sensor (z+ mide 10,10 y z− −9,65)
      [CAR], y porque las caras quedaron inclinadas 2,8° a 3,7°.
   3. *¿Qué pasa si un golpe pasa de 4 g?* El sensor satura: el valor se queda en el máximo (32 767
-     cuentas = 39,2 m/s²) y se pierde información. Para el ascensor y el metro alcanza: el ascensor
+     cuentas = 39,2 m/s²) y se pierde información. Para el ascensor alcanza: el ascensor
      acelera ~1 m/s².
 
 ### 7. `caras_2026-11-24_caras.png`: |g| antes y después de calibrar
@@ -254,7 +254,7 @@ docente, con la idea de la respuesta.
      Además, la fórmula del ruido con ZUPT sí acierta: predice 0,100 m de error por recorrido y se
      midieron 0,106 m [EST].
 
-### Extra: `guia/error_metro_estimado.png` (estimación, no son datos)
+### Extra: `guia/error_metro_estimado.png` (cálculo teórico, no son datos)
 
 Está explicada en la sección e).
 
@@ -266,12 +266,12 @@ Detalle técnico y cómo se verificó cada uno: `COMPONENTES.md`.
 
 | Componente | Qué mide o hace | Para qué se usa en el proyecto |
 |---|---|---|
-| Acelerómetro (MPU-6500) | La aceleración en 3 ejes, **incluida la gravedad**: quieto marca +g hacia arriba | Calibración (seis caras); dirección "arriba" en el reposo inicial; integrar para obtener velocidad y altura (ascensor) o distancia (metro); detector de quietud |
-| Giroscopio (MPU-6500) | La velocidad angular en 3 ejes (°/s) | Rumbo del metro (integrando el giro alrededor de la vertical); detector de quietud. Su sesgo (−4,5 °/s en x) se mide en cada reposo inicial |
+| Acelerómetro (MPU-6500) | La aceleración en 3 ejes, **incluida la gravedad**: quieto marca +g hacia arriba | Calibración (seis caras); dirección "arriba" en el reposo inicial; integrar para obtener velocidad y altura (ascensor); detector de quietud |
+| Giroscopio (MPU-6500) | La velocidad angular en 3 ejes (°/s) | Detector de quietud; un rumbo (integrando el giro alrededor de la vertical) queda para el segundo parcial. Su sesgo (−4,5 °/s en x) se mide en cada reposo inicial |
 | Barómetro (BMP280) | La presión del aire (Pa) y la temperatura de su chip (°C) | Altura con la ecuación hipsométrica; fusión con el acelerómetro; comprobar que los dos sensores cuentan la misma historia |
 | ESP32 | Lee los sensores cada 5 ms, pone la marca de tiempo y guarda en la microSD | Dos tareas en paralelo (muestreo y escritura) con una cola en medio, para no perder muestras cuando la tarjeta tarda |
 | MicroSD | Guarda los archivos de cada sesión | Datos crudos para procesarlos después en Python |
-| Botón | Marca un instante en `eventos.csv` | Cierre y apertura de puertas (ascensor), salida y llegada (metro): dice dónde aplicar el ZUPT |
+| Botón | Marca un instante en `eventos.csv` | Cierre y apertura de puertas del ascensor: dice dónde aplicar el ZUPT |
 | Power bank | Energía | Grabar sin cables, 95 min sin cortes |
 | Caja | Sujeta todo | El sensor tiene que moverse junto con el vehículo; si se mueve dentro de la caja, mide su propio movimiento |
 
@@ -355,7 +355,7 @@ Con σ = 0,095 m/s² y los recorridos sin PB del ascensor (de 11,7 a 16,1 s entr
 - La resolución **no** es lo que limita: en los tres sensores el ruido es varias veces 1 LSB.
 - Pasar de Pa a altura: dh/dP = R·T/(M·g·P) = 8,314·298/(0,02896·9,77·73 000) ≈ 0,12 m/Pa. Por eso
   0,33 Pa ≈ 4 cm.
-- El rango ±4 g alcanza para el ascensor (~1 m/s²) y el metro. Lo único que se acercó al límite fue
+- El rango ±4 g alcanza para el ascensor (~1 m/s²). Lo único que se acercó al límite fue
   un golpe al apoyar la caja en las seis caras (~30 m/s², figura 6).
 
 ### Memoria (microSD), con el tamaño real de nuestros archivos
@@ -420,8 +420,10 @@ error se vuelve inútil en segundos o minutos.
 
 ## e) Estimación para un viaje completo del Metro de Quito
 
-**Esto es una estimación, no una medición.** El metro todavía no se grabó. La calculamos con
-`python guia/estimar_error_metro.py` [EST] y los números medidos.
+**CÁLCULO TEÓRICO** para un viaje hipotético. No usa datos del metro ni simulaciones: solo el
+sesgo y el ruido **medidos** con nuestro sensor (reposo y ascensor), el error de escala de la
+calibración de seis caras y un perfil de viaje supuesto. Se calcula con
+`python guia/estimar_error_metro.py` [EST].
 
 ### Supuestos
 
@@ -478,7 +480,7 @@ parábolas, con saltos en cada estación; las verdes son el caso B, unas 300 vec
 
 - **ZUPT en cada estación es obligatorio.** Sin eso no hay resultado.
 - Con ZUPT, lo que queda es sobre todo el **error de escala**. Se puede corregir con la distancia
-  conocida entre estaciones (`metro` ya calcula un factor de escala por mínimos cuadrados).
+  conocida entre estaciones (un factor de escala por mínimos cuadrados).
 - **El rumbo es aparte.** Si solo se resta el sesgo del giroscopio del inicio, su deriva
   (−0,047 (°/s)/h [R90]) desvía el rumbo ½·k·t² ≈ **29°** en 35 min, y la trayectoria del mapa se
   tuerce. Hay que volver a medir el sesgo del giroscopio en cada parada.

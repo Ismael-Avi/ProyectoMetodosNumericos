@@ -1,7 +1,0 @@
-# Dependencias del programa de procesamiento (Python 3.10 o superior).
-# Instalar con:  pip install -r requirements.txt
-numpy
-scipy
-pandas
-matplotlib
-pytest

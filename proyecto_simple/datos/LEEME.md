@@ -2,8 +2,7 @@
 
 Esta carpeta tiene las sesiones **reales** grabadas por el dispositivo (ESP32 + GY-91 con MPU-6500 y
 BMP280, firmware `firmware/registrador_v01/registrador_v01.ino`) y los archivos de referencia que
-usa `navegacion.py`. Las sesiones de `simulados/` las genera el simulador, solo sirven para probar
-el código y no se suben a git.
+usa `navegacion.py`.
 
 Los números de la tabla salen de `python navegacion.py verificar datos/<sesion>` (corridas del
 24/11/2026; el ascensor, del 26/11/2026). La inclinación sale de `python navegacion.py reposo` y `caras` (ángulo respecto al eje más
@@ -238,7 +237,4 @@ Tomada de `firmware/registrador_v01/registrador_v01.ino`:
 | Archivo | Columnas | Estado |
 |---|---|---|
 | `pisos.csv` | `piso,altura_m,fuente` | lleno (flexómetro, 26/11/2026, edificio del ascensor). **PB→1 (4,90 m) es dudoso y no se pudo volver a medir:** el barómetro y el acelerómetro dan ~5,3–5,5 m (`../RESULTADOS_AVANCE.md`, sección 5.4) |
-| `estaciones.csv` | `orden,estacion,lat,lon,distancia_al_siguiente_m,fuente` | **vacío** (solo encabezado). Faltan las estaciones del Metro con fuente verificable |
-| `viajes.csv` | `sesion,estacion_inicial,sentido` | **vacío** (solo encabezado). Se llena con cada viaje en metro |
 
-`sentido` = 1 si el viaje va en el orden de `estaciones.csv`, -1 si va al revés (ver `../README.md`).

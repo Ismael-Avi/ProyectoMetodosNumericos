@@ -1,7 +1,8 @@
-"""Estimacion (no medicion) del error de distancia en un viaje completo del Metro de Quito.
+"""CALCULO TEORICO del error de distancia en un viaje hipotetico del Metro de Quito.
 
-Sirve para la GUIA_ESTUDIO.md, seccion e). Usa los numeros que medimos con el dispositivo y un
-perfil de viaje supuesto. Correr desde proyecto_simple/:
+Sirve para la GUIA_ESTUDIO.md, seccion e). No usa datos del metro ni simulaciones: solo el sesgo
+y el ruido medidos con nuestro sensor (reposo y ascensor), el error de escala de las seis caras y
+un perfil de viaje supuesto. Correr desde proyecto_simple/:
 
     python guia/estimar_error_metro.py
 
@@ -104,7 +105,7 @@ def main():
     for k in range(1, n_tramos):
         ax.axvline(k * largo / 1000, color="0.85", lw=0.6, zorder=0)
     ax.set(xlabel="distancia recorrida (km)", ylabel="error de distancia (m)", ylim=(0.1, 5e4),
-           title="Estimacion del error en un viaje de metro de 22 km (lineas grises: estaciones)")
+           title="Calculo teorico: error en un viaje hipotetico de 22 km (gris: estaciones)")
     ax.grid(True, which="major", alpha=0.3)
     ax.legend(fontsize=8, loc="lower right")
     fig.tight_layout()

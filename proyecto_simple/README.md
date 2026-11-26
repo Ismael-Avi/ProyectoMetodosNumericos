@@ -2,7 +2,7 @@
 
 Todo el procesamiento está en un solo script, `navegacion.py`. Lee las sesiones que graba el
 firmware `firmware/registrador_v01/registrador_v01.ino` (ESP32 + MPU-6500 + BMP280) y calcula
-velocidad, altura y trayectoria sin GPS.
+velocidad y altura sin GPS.
 
 ## Mapa de la entrega
 
@@ -18,7 +18,7 @@ Rutas relativas a `proyecto_simple/`:
 | Datos crudos | [`datos/`](datos/): una carpeta por sesión real (`meta.json`, `imu.csv`, `baro.csv`, `eventos.csv`) |
 | Descripción de los datos | [`datos/LEEME.md`](datos/LEEME.md): tabla de sesiones, formato de cada archivo, conversión a unidades y configuración del sensor |
 | Resultados del avance | [`RESULTADOS_AVANCE.md`](RESULTADOS_AVANCE.md): resumen para el docente (reposo, seis caras y ascensor, con datos reales) |
-| Resultados | [`resultados/`](resultados/): figuras y reportes de las sesiones reales. Los de sesiones simuladas están aparte, en [`resultados/simulados/`](resultados/simulados/) |
+| Resultados | [`resultados/`](resultados/): figuras y reportes de las sesiones reales |
 | Fotos del montaje | [`fotos/`](fotos/) (ver la sección [Fotos](#fotos)) |
 | Componentes | [`COMPONENTES.md`](COMPONENTES.md): modelo, cómo se verificó, configuración y conexiones |
 | Evidencia del hardware | [`evidencias/prueba_i2c_sd_2026-11-18.jpeg`](evidencias/prueba_i2c_sd_2026-11-18.jpeg): monitor serie del 18/11 (sensores en 0x68 y 0x76, WHO_AM_I 0x70, ID 0x58, microSD de 29 825 MB) |
@@ -83,30 +83,20 @@ datos/<sesion>/          sesiones reales: meta.json, imu.csv, baro.csv, eventos.
                          caras_2026-11-24v1, ascensor_2026-11-26). Opcionales, escritos a mano:
                          eventos_corregidos.csv y paradas.csv (ver abajo)
 datos/LEEME.md           descripción de las sesiones y del formato de los archivos
-datos/simulados/         sesiones simuladas, solo para probar el código (no se suben a git)
 datos/pisos.csv          altura real de cada piso (flexómetro, 26/11/2026; PB->1 dudoso, ver RESULTADOS 5.4)
-datos/estaciones.csv     estaciones, coordenadas y largo de cada tramo -> VACÍO, falta llenar
-datos/viajes.csv         en qué estación empezó cada viaje y en qué sentido -> VACÍO
 resultados/              figuras (.png) y reportes (.txt) de las sesiones reales, y calibracion.json
                          (calibración oficial, de caras_2026-11-24)
-resultados/simulados/    resultados de las sesiones simuladas (reposo, caras, ascensor, metro) y
-                         calibracion_simulada.json, que no se usa
 bitacora.csv             una fila por cada comando ejecutado
 bitacora.md              bitácora escrita: experimentos, problemas, decisiones, uso de IA
 RESULTADOS_AVANCE.md     resumen de resultados del avance, para el docente
 fotos/                   fotos del montaje
 evidencias/              captura de la prueba del hardware (18/11)
 presentacion/            presentación (presentacion.pptx), el script que la genera y el diagrama de conexiones
-guia/                    script de la estimación del error en el metro (para GUIA_ESTUDIO.md) y su figura
+guia/                    cálculo teórico del error (GUIA_ESTUDIO.md, punto e) y su figura
 ENTREGABLES.md           ruta de cada entregable y qué demuestra cada etapa
 COMPONENTES.md           componentes, verificación, configuración y conexiones
 GUIA_ESTUDIO.md          guía de estudio para los integrantes
 ```
-
-`datos/viajes.csv` no estaba en el plan original. Hace falta porque con solo `eventos.csv` el
-programa no sabe por qué estaciones pasó un viaje. Columnas: `sesion,estacion_inicial,sentido`
-(`sentido` = 1 si el viaje va en el orden de `estaciones.csv`, -1 si va al revés). El nombre de
-la estación se escribe igual que en `estaciones.csv`.
 
 ## Comandos
 
@@ -116,10 +106,9 @@ Se corren desde la carpeta `proyecto_simple/`:
 |---|---|---|
 | `verificar` | muestras perdidas, frecuencia real al inicio y al final, jitter, gráfica de señales | `python navegacion.py verificar datos/sesion_002` |
 | `reposo` | sesgo y ruido de cada eje, detector quieto / en movimiento, inclinación, deriva por bloques de 10 min (giroscopio, acelerómetro, presión, temperatura) con figura `*_deriva.png` | `python navegacion.py reposo datos/sesion_002` |
-| `caras` | calibración de seis caras; guarda `resultados/calibracion.json` (si la sesión es simulada, guarda `resultados/simulados/calibracion_simulada.json`, que ningún comando usa). Figura `*_caras.png`: \|g\| antes y después de calibrar en cada tramo quieto. Además muestra \|g\| calibrado en cada tramo quieto que no se usó (posiciones inclinadas): prueba de que \|g\| no cambia al girar | `python navegacion.py caras datos/caras_2026-11-24` |
+| `caras` | calibración de seis caras; guarda `resultados/calibracion.json`. Figura `*_caras.png`: \|g\| antes y después de calibrar en cada tramo quieto. Además muestra \|g\| calibrado en cada tramo quieto que no se usó (posiciones inclinadas): prueba de que \|g\| no cambia al girar | `python navegacion.py caras datos/caras_2026-11-24` |
 | `metodos` | prueba del BMP280 y de los métodos numéricos contra numpy y contra soluciones exactas | `python navegacion.py metodos` |
 | `ascensor` | altura y velocidad con dos métodos, ZUPT, barómetro, fusión; error del desnivel de cada recorrido (con y sin PB, y solo con pulsos originales), altura PB→1 implícita, cruces de piso | `python navegacion.py ascensor datos/ascensor_2026-11-26 --hasta 305 --recorridos 1,2,3,4,5,6,7,8,9,11` |
-| `metro` | rumbo, velocidad, distancia por tramo, trayectoria y dispersión entre viajes. **Por ahora solo probado con datos simulados**, que no están en el repositorio (`datos/simulados/` no se sube a git): en un clon limpio este ejemplo da `FileNotFoundError`. Es para el segundo parcial | `python navegacion.py metro datos/simulados/metro_1 datos/simulados/metro_2` |
 
 **Opciones** (sirven con cualquier comando que lee una sesión):
 
@@ -156,9 +145,9 @@ python navegacion.py reposo    datos/reposo_90min_2026-11-21_1915-2049 --botones
 `verificar` conviene correrlo sin recorte (las pérdidas y la frecuencia se miden en todo el
 registro). Las pulsaciones a menos de 1 s de la anterior se ignoran (rebote del pulsador).
 
-Orden recomendado: `verificar` → `reposo` → `caras` (una vez) → `ascensor` / `metro`.
-`ascensor` y `metro` usan solo `resultados/calibracion.json`, que debe venir de una sesión real de
-`caras`. Si no existe, avisan y siguen sin calibrar (sesgo 0, escala 1).
+Orden recomendado: `verificar` → `reposo` → `caras` (una vez) → `ascensor`.
+`ascensor` usa `resultados/calibracion.json`, que deja `caras`. Si no existe, avisa y sigue sin
+calibrar (sesgo 0, escala 1).
 
 ## Resultados con datos reales
 
@@ -179,8 +168,7 @@ ascensor (`ascensor_2026-11-26`, 13 recorridos, 10 evaluados). El resumen está 
   PB→1 de ~5,3–5,5 m contra 4,90 m de la cinta. 23 cruces de pisos encontrados por bisección. El
   barómetro deriva ~0,7 m en 5 min.
 
-**El metro todavía no se ha grabado.** El comando `metro` se probó solo con sesiones simuladas, y
-sus resultados están en `resultados/simulados/`.
+El metro es la etapa del segundo parcial.
 
 ## Fotos
 
@@ -201,13 +189,11 @@ sus resultados están en `resultados/simulados/`.
 - **Botón en pares.** Ascensor: un pulso al cerrarse la puerta (antes de moverse) y otro al
   abrirse (ya detenido). En el ascensor del 26/11, tres pulsos de cierre llegaron 0,3–0,5 s
   después del arranque y el acelerómetro perdía hasta 0,38 m/s (se corrigieron en
-  `eventos_corregidos.csv`). Mejor pulsar antes de que se cierre la puerta. Metro: un pulso al salir de la estación y otro al llegar. Cada par
-  (salida, llegada) es un tramo; entre pares el dispositivo está parado y se aplica ZUPT. Si el
+  `eventos_corregidos.csv`). Mejor pulsar antes de que se cierre la puerta. Cada par
+  (cierre, apertura) es un recorrido; entre pares el dispositivo está parado y se aplica ZUPT. Si el
   número de pulsos es impar, el programa usa el detector de quietud, que no distingue una parada
   de una velocidad constante. Por eso conviene no olvidar ningún pulso.
 - **Ascensor:** empezar en el piso 0 de `pisos.csv` (las alturas son relativas a ese piso).
-- **Metro:** el dispositivo va fijo al vagón, en cualquier orientación. La dirección "adelante"
-  se saca del primer arranque.
 - **Caras:** al menos 10 s quieto en cada una de las seis caras. En la misma grabación, dejar
   el dispositivo quieto al menos 5 s en varias posiciones inclinadas (apoyado contra algo, en
   ángulos cualquiera), moviéndolo entre posición y posición. Esos tramos no se usan para calibrar:
@@ -225,7 +211,6 @@ sus resultados están en `resultados/simulados/`.
 | fórmula del BMP280 | `bmp280()` | Bosch, *BMP280 datasheet* BST-BMP280-DS001: fórmula de compensación en punto flotante (double) y ejemplo de cálculo (adc_T=519888, adc_P=415148 → 25,08 °C y 100653,27 Pa). Fórmula en la sección 3.11.3, versión en punto flotante en el apéndice 8.1, ejemplo en la sección 3.12 (verificar con la revisión del PDF) |
 | `R_GAS` | 8,314462618 J/(mol·K) | constante de los gases, valor exacto del SI (2019) |
 | `M_AIRE` | 0,0289644 kg/mol | masa molar del aire seco, *U.S. Standard Atmosphere 1976* |
-| `RADIO_TIERRA` | 6 371 000 m | radio medio de la Tierra (IUGG). Solo para pasar lat/lon a metros en distancias cortas |
 
 ### De dónde sale g = 9,77 m/s²
 
@@ -253,14 +238,10 @@ Parámetros elegidos por nosotros (no son constantes físicas):
 | `BLOQUE_DERIVA_S` | 600 s | tamaño de los bloques para estudiar la deriva en `reposo` |
 | `CARA_MINIMA_S`, `QUIETO_MINIMO_S` | 10 s, 3 s | duración mínima (sin contar 1 s de margen a cada lado) de una cara y de un tramo quieto extra |
 | `TAU_FILTRO_S` | 3 s | filtro complementario: por debajo de ~3 s manda el acelerómetro, por encima el barómetro |
-| `SUAVIZADO_BARO_S` | 10 s | ventana para derivar la altura barométrica en el metro (pendiente). Con 2 s la pendiente sale muy ruidosa |
 | `PRUEBA_SESGO`, `PRUEBA_RUIDO` | 0,05 y 0,02 m/s² | valores de prueba del comando `metodos`, del orden del ruido medido en sesion_002 |
 
-## Lo que todavía no se puede hacer
+## Límites que hay que tener en cuenta
 
-- Los errores del metro contra la realidad salen en cuanto se llenen `estaciones.csv` y
-  `viajes.csv`. Mientras estén vacíos, el metro no tiene error. (Si `pisos.csv` estuviera vacío, el
-  ascensor se compararía contra el barómetro.)
-- Sin coordenadas reales, el mapa del metro se dibuja con el eje x en la dirección inicial de cada viaje.
-- Como trazado real se usa la línea recta entre estaciones. No tenemos la forma de la vía.
-- Sin magnetómetro (MPU-6500), el rumbo sale solo del giroscopio y su error crece con el tiempo.
+- Sin magnetómetro (MPU-6500), un rumbo solo podría salir del giroscopio, y su error crece con el
+  tiempo.
+- Si `pisos.csv` estuviera vacío, `ascensor` compararía contra el barómetro, que no es un error real.
