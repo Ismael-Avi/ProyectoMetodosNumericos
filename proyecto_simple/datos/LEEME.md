@@ -17,7 +17,7 @@ cercano, sin calibrar).
 | `reposo_90min_2026-11-21_1915-2049/` | 21/11/2026, 19:15 a 20:49 | reposo largo (90 min) | 5694,3 s (94,9 min) | 1 138 860 | 142 358 | 0 / 0 | 200,000 / 200,000 Hz | 25,000 / 25,000 Hz | power bank | sobre una mesa nivelada (casa de Ismael), eje z hacia arriba, protoboard inclinada 9,2° |
 | `caras_2026-11-24v1/` | 24/11/2026, aprox. 18:00 | seis caras, segundo intento (comparación; no es la calibración oficial) | 481,5 s (8,0 min) | 96 306 | 12 039 | 0 / 0 | 200,000 / 200,000 Hz | 25,000 / 25,000 Hz | power bank | sobre una mesa nivelada (casa de Cesar); protoboard fijada dentro de una caja; solo las seis caras, inclinadas 3,0° a 9,0° |
 | `caras_2026-11-24/` | 24/11/2026, aprox. 18:30 | seis caras + 8 posiciones inclinadas (**calibración oficial**) | 746,7 s (12,4 min) | 149 332 | 18 667 | 0 / 0 | 200,000 / 200,000 Hz | 25,000 / 25,000 Hz | power bank | sobre una mesa nivelada (casa de Cesar); protoboard fijada dentro de una caja; seis caras y 8 posiciones inclinadas de 5,2° a 22,3° |
-| `ascensor_2026-11-26/` | 26/11/2026 | ascensor: 13 recorridos entre PB, 1, 3 y 5 (se usan los 12 primeros, hasta 305 s) | 315,0 s (5,3 min) | 63 004 | 7 876 | 0 / 0 | 200,000 / 200,000 Hz | 25,000 / 25,000 Hz | power bank por V5 | caja en el piso del ascensor, inclinada 7,0° (calibrado) |
+| `ascensor_2026-11-26/` | 26/11/2026 | ascensor: 13 recorridos entre PB, 1, 3 y 5 (hasta 305 s; 10 evaluados: 1–9 y 11) | 315,0 s (5,3 min) | 63 004 | 7 876 | 0 / 0 | 200,000 / 200,000 Hz | 25,000 / 25,000 Hz | power bank por V5 | caja en el piso del ascensor, inclinada 7,0° (calibrado) |
 
 Otros datos de `verificar`:
 
@@ -208,7 +208,7 @@ Tomada de `firmware/registrador_v01/registrador_v01.ino`:
 
 | Archivo | Columnas | Estado |
 |---|---|---|
-| `pisos.csv` | `piso,altura_m,fuente` | lleno (flexómetro, 26/11/2026, edificio del ascensor). **PB→1 (4,90 m) se va a volver a medir:** el barómetro y el acelerómetro dan ~5,7 m |
+| `pisos.csv` | `piso,altura_m,fuente` | lleno (flexómetro, 26/11/2026, edificio del ascensor). **PB→1 (4,90 m) es dudoso y no se pudo volver a medir:** el barómetro y el acelerómetro dan ~5,3–5,5 m (`../RESULTADOS_AVANCE.md`, sección 5.4) |
 | `estaciones.csv` | `orden,estacion,lat,lon,distancia_al_siguiente_m,fuente` | **vacío** (solo encabezado). Faltan las estaciones del Metro con fuente verificable |
 | `viajes.csv` | `sesion,estacion_inicial,sentido` | **vacío** (solo encabezado). Se llena con cada viaje en metro |
 

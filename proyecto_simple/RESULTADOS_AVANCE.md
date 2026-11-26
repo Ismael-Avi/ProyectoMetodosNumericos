@@ -144,99 +144,189 @@ Chequeos que se cumplen con los datos reales:
 **Qué se hizo:** la caja en el piso del ascensor, alimentada con una power bank por el pin V5. El
 edificio tiene PB y 5 pisos, pero solo hay acceso a PB, 1, 3 y 5. Se hicieron 13 recorridos:
 
-0→1, 1→3, 3→0, 0→5, 5→1, 1→5, 5→0, 0→3, 3→1, 1→3, 3→5, 5→3, 3→1.
-
-Son 12 recorridos útiles. El 13 se cortó al llegar (se apagó sin reposo final), así que se analiza
-la sesión solo hasta t = 305 s:
+| # | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Pisos | 0→1 | 1→3 | 3→0 | 0→5 | 5→1 | 1→5 | 5→0 | 0→3 | 3→1 | 1→3 | 3→5 | 5→3 | 3→1 |
 
 ```
 python navegacion.py verificar datos/ascensor_2026-11-26
-python navegacion.py ascensor  datos/ascensor_2026-11-26 --hasta 305
+python navegacion.py ascensor  datos/ascensor_2026-11-26 --hasta 305 --recorridos 1,2,3,4,5,6,7,8,9,11
 ```
 
 **Alturas de los pisos** (`datos/pisos.csv`, flexómetro): PB 0,00; 1: 4,90; 2: 7,42; 3: 9,90;
 4: 12,34; 5: 14,86 m.
 
-**Pulsos corregidos a mano.** `eventos.csv` tiene 33 pulsaciones y quedan 21 tras quitar los rebotes
-(pulsos dobles a 0,2–0,35 s). Además, el primer pulso (0,3 s) fue una marca de inicio y no un
-cierre de puerta, y faltan pulsos en los recorridos 10, 12 y 13. Con eso no se pueden armar los
-pares. Por eso se hizo `eventos_corregidos.csv` (12 pares cierre/apertura), que el programa usa en
-vez de `eventos.csv`; el archivo original no se tocó. Cuatro pulsos son inventados (6,8; 239,3;
-248,0 y 283,1 s): salen del arranque y la parada que se ven en el acelerómetro. `paradas.csv` dice
-en qué piso estaba cada una de las 13 paradas. Con el "piso más cercano", la última parada (piso 3,
-medido 11,4 m) se confundía con el piso 4.
+### 5.1 Pulsos y recorridos evaluados
 
-**Números clave:**
-- 63 004 muestras del IMU y 7 876 del barómetro, 0 perdidas; 200,000 Hz al inicio y al final.
-- Reposo inicial (0 a 5,8 s): |g| calibrado 9,759 m/s², inclinación 7,0°. Ruido del acelerómetro
-  **0,095 m/s²**, 5 a 7 veces más que sobre la mesa (0,013–0,018), porque el piso del ascensor
-  vibra.
-- Velocidad de crucero ~1,25 m/s; recorridos de 8,7 a 20,5 s (entre pulsos).
+`eventos.csv` tiene 33 pulsaciones (21 tras quitar rebotes). El primer pulso (0,3 s) fue una marca
+de inicio, faltan pulsos en los recorridos 10, 12 y 13, y en los recorridos 2, 3 y 11 el pulso de
+cierre llegó tarde: el ascensor empezó a acelerar 0,26 s, 0,52 s y 0,52 s antes. Por eso se usa
+`eventos_corregidos.csv` (12 pares cierre/apertura). El programa lo usa en vez de `eventos.csv`,
+que no se tocó.
 
-**Error de altura en las 13 paradas**, contra el piso de `paradas.csv`:
+| Recorrido | Cierre | Apertura | Estado de los pulsos |
+|---|---|---|---|
+| 1 | 6,8 s, estimado | original | se pulsó, pero al inicio (marca de inicio) |
+| 2, 3, 11 | 28,8 / 50,4 / 261,0 s, adelantados | original | se pulsó, pero tarde |
+| 4 a 9 | original | original | 100 % originales |
+| 10 | 239,3 s, inventado | 248,0 s, inventado | nadie pulsó |
+| 12 | 283,1 s, inventado | original | nadie pulsó el cierre |
+| 13 | — | — | cortado al llegar: queda fuera con `--hasta 305` |
 
-| Método | Error RMS (m) | Error máx. (m) |
-|---|---|---|
-| Rectángulo sin corrección | 308,3 | 634,9 |
-| Trapecio sin corrección | 308,2 | 634,8 |
-| Trapecio − sesgo | 68,1 | 147,1 |
-| Rectángulo − sesgo + ZUPT | 1,43 | 2,13 |
-| Trapecio − sesgo + ZUPT | 1,41 | 2,11 |
-| Solo barómetro | 1,00 | 1,73 |
-| Fusión acelerómetro + barómetro + ZUPT | **0,99** | 1,70 |
+Los tiempos estimados salen del arranque que se ve en el acelerómetro, menos ~1 s (por ejemplo, en
+el recorrido 2 el ascensor arranca a 29,84 s y el cierre se puso en 28,8 s).
 
-- **Rectángulo y trapecio** dan casi lo mismo (diferencia de 0,02 m con ZUPT). El método de
-  integración no importa; lo que importa es corregir el sensor (igual que en `metodos`).
-- **Sin ZUPT** el error llega a cientos de metros en 5 min: un sesgo de 0,01 m/s² da
-  ½·b·t² ≈ 500 m en 305 s. Restar el sesgo del reposo inicial no basta (147 m), porque el error
-  restante no es constante (ver la figura de velocidad).
-- **Con ZUPT** el error baja a ~1,4 m sin usar el barómetro.
-- Casi todo el error de la fusión (~0,8 m en cada piso sobre PB) viene de la altura PB→1 (ver
-  abajo), no del método.
+**Criterio de selección: se eligieron por la calidad de los pulsos, decidida antes de ver los
+errores, no por el error obtenido.** Si el pulso existió pero a destiempo, se corrige su tiempo y
+el recorrido se evalúa (1, 2, 3, 11). Si nadie pulsó, el recorrido se descarta (10 y 12). **Se
+evalúan 10 recorridos: 1, 2, 3, 4, 5, 6, 7, 8, 9 y 11.** Los recorridos 10 y 12 se siguen
+integrando, porque el ascensor sí se movió y la integración tiene que ser continua, pero no entran
+en las tablas de error ni en los promedios. (No tenían errores grandes: con trapecio + ZUPT, +0,06 m
+en el 10 y −0,13 m en el 12.)
 
-**Cruces de pisos (bisección):** 23 cruces de pisos intermedios, los 23 que tocan: en cada recorrido
-se buscan los pisos que hay entre el de salida y el de llegada. Por ejemplo, en el 0→5 (recorrido 4)
-cruza los pisos 1, 2, 3 y 4 en 82,4; 84,4; 86,4 y 88,4 s, uno cada ~2,0 s. Con pisos de ~2,5 m
-eso da ~1,25 m/s, la velocidad de crucero.
+### 5.2 Evaluación por desnivel
 
-**Figura principal:** `resultados/ascensor_2026-11-26_ascensor.png`.
-**Qué mirar:**
+Se evalúa el **desnivel de cada recorrido** (altura de llegada − altura de salida), no la altura
+absoluta de cada parada. La altura absoluta depende de la altura PB→1 de la cinta, que parece
+estar mal (sección 5.4) y no se puede volver a medir. El desnivel entre los pisos 1, 3 y 5 no
+depende de PB→1.
+
+- **Validación principal:** los recorridos que no pasan por PB: **2, 5, 6, 9 y 11** (1→3, 5→1,
+  1→5, 3→1, 3→5).
+- **Aparte:** los que tocan PB (1, 3, 4, 7 y 8). Su desnivel real incluye PB→1 de la cinta.
+
+**Desnivel de los 10 recorridos evaluados** (m; PB = toca la planta baja):
+
+| # | Pisos | PB | Real (cinta) | Barómetro | Trapecio + ZUPT | Rectángulo + ZUPT | Fusión |
+|---|---|---|---|---|---|---|---|
+| 1 | 0→1 | sí | 4,90 | 5,74 | 5,41 | 5,41 | 5,71 |
+| 2 | 1→3 | | 5,00 | 4,96 | 5,02 | 5,02 | 4,94 |
+| 3 | 3→0 | sí | −9,90 | −10,30 | −10,48 | −10,47 | −10,28 |
+| 4 | 0→5 | sí | 14,86 | 15,37 | 15,49 | 15,51 | 15,32 |
+| 5 | 5→1 | | −9,96 | −9,79 | −10,10 | −10,10 | −9,74 |
+| 6 | 1→5 | | 9,96 | 9,82 | 10,12 | 10,12 | 9,77 |
+| 7 | 5→0 | sí | −14,86 | −15,49 | −15,40 | −15,39 | −15,47 |
+| 8 | 0→3 | sí | 9,90 | 10,51 | 9,87 | 9,89 | 10,53 |
+| 9 | 3→1 | | −5,00 | −4,87 | −5,02 | −5,02 | −4,85 |
+| 11 | 3→5 | | 4,96 | 5,54 | 5,07 | 5,07 | 5,52 |
+
+**Error del desnivel en la validación principal** (recorridos 2, 5, 6, 9 y 11; método − cinta):
+
+| Método | Error medio (m) | Error RMS (m) | Error máx. (m) |
+|---|---|---|---|
+| Rectángulo sin corrección | −53,24 | 60,23 | 92,61 |
+| Trapecio sin corrección | −53,24 | 60,22 | 92,60 |
+| Trapecio − sesgo | −12,43 | 14,68 | 23,81 |
+| Rectángulo − sesgo + ZUPT | +0,024 | 0,107 | 0,156 |
+| **Trapecio − sesgo + ZUPT** | **+0,027** | **0,106** | **0,156** |
+| Solo barómetro | +0,141 | 0,283 | 0,578 |
+| Fusión acelerómetro + barómetro + ZUPT | +0,137 | 0,293 | 0,562 |
+
+- **Con ZUPT, el acelerómetro mide el desnivel con un error RMS de 0,11 m** (máx. 0,16 m en
+  desniveles de 5 a 10 m), sin barómetro.
+- **Rectángulo y trapecio dan lo mismo** (0,107 contra 0,106 m). El error del método de
+  integración es despreciable frente al error del sensor. Lo que cambia el resultado son las
+  correcciones: sin corregir el error es de decenas de metros; restar el sesgo lo baja a ~15 m;
+  el ZUPT, a 0,1 m.
+- **El barómetro solo (0,28 m) y la fusión (0,29 m) quedan peor que el acelerómetro con ZUPT.**
+  Casi todo viene del recorrido 11 (barómetro +0,58 m, acelerómetro +0,11 m), cerca del final de
+  la sesión, cuando el barómetro ya derivó (sección 5.5). En recorridos de ~10–20 s con paradas en
+  medio, el ZUPT corrige mejor que el barómetro.
+
+**Recorridos que tocan PB** (1, 3, 4, 7, 8): error RMS de 0,50 m con trapecio + ZUPT, 0,51 m con
+rectángulo + ZUPT, 0,62 m con el barómetro y 0,60 m con la fusión. El error medio con barómetro es
+de +0,19 m. Es mayor que sin PB porque incluye la altura PB→1 de la cinta (sección 5.4).
+
+### 5.3 Validación extra: solo los recorridos de pulsos 100 % originales
+
+Se repitió la evaluación solo con los recorridos cuyos dos pulsos están en `eventos.csv`: 4, 5, 6,
+7, 8 y 9. El programa los detecta solo, comparando `eventos_corregidos.csv` con `eventos.csv`
+(tolerancia 0,1 s). Error RMS del desnivel (m):
+
+| Grupo | Método | 10 evaluados | 6 originales |
+|---|---|---|---|
+| Sin PB | Trapecio + ZUPT | 0,106 (2, 5, 6, 9, 11) | 0,121 (5, 6, 9) |
+| Sin PB | Rectángulo + ZUPT | 0,107 | 0,123 |
+| Sin PB | Barómetro | 0,283 | 0,147 |
+| Sin PB | Fusión | 0,293 | 0,191 |
+| Con PB | Trapecio + ZUPT | 0,504 (1, 3, 4, 7, 8) | 0,477 (4, 7, 8) |
+| Con PB | Barómetro | 0,616 | 0,586 |
+| Con PB | Fusión | 0,595 | 0,570 |
+| Todos | Trapecio + ZUPT | 0,365 | 0,348 |
+| Todos | Rectángulo + ZUPT | 0,367 | 0,352 |
+| Todos | Barómetro | 0,479 | 0,427 |
+| Todos | Fusión | 0,469 | 0,425 |
+
+**Los errores son parecidos: las correcciones de pulsos no sesgaron el resultado.** El
+acelerómetro con ZUPT, que es el que depende de los pulsos, da 0,106 m con los 10 y 0,121 m con
+los 6 originales. La diferencia más grande es la del barómetro sin PB (0,28 contra 0,15 m), y
+viene del recorrido 11 (deriva del barómetro). El desnivel barométrico es el promedio de la presión
+en las paradas, así que mover un pulso unas décimas de segundo casi no lo cambia.
+
+### 5.4 Hallazgo: la altura PB→1 de la cinta (4,90 m) parece mal medida
+
+Cada recorrido que toca PB da una estimación de PB→1: el |desnivel medido| menos la distancia de
+la cinta entre el piso 1 y el otro piso del recorrido. Esa distancia sí coincide con los sensores
+(sección 5.2).
+
+| # | Pisos | Barómetro | Trapecio + ZUPT | Rectángulo + ZUPT | Fusión |
+|---|---|---|---|---|---|
+| 1 | 0→1 | 5,74 | 5,41 | 5,41 | 5,71 |
+| 3 | 3→0 | 5,30 | 5,48 | 5,47 | 5,28 |
+| 4 | 0→5 | 5,41 | 5,53 | 5,55 | 5,36 |
+| 7 | 5→0 | 5,53 | 5,44 | 5,43 | 5,51 |
+| 8 | 0→3 | 5,51 | 4,87 | 4,89 | 5,53 |
+| **Media ± desv. est.** | | **5,50 ± 0,16** | **5,34 ± 0,27** | 5,35 ± 0,26 | 5,48 ± 0,17 |
+
+Dos sensores independientes dicen que PB→1 mide ~5,3–5,5 m, no 4,90 m: el barómetro en los 5
+recorridos (5,30 a 5,74 m) y el acelerómetro en 4 de los 5 (5,41 a 5,53 m; el recorrido 8 da
+4,87). En el recorrido directo 0→1, el barómetro mide 5,74 m y el acelerómetro 5,41 m. En cambio,
+los tramos 1→3 y 3→5 coinciden con la cinta a ~0,1 m. Lo más probable es un error al medir PB→1
+con la cinta. No se puede volver a medir, así que `pisos.csv` deja 4,90 m y la evaluación
+principal no usa PB.
+
+### 5.5 Cruces de pisos, ruido y deriva del barómetro
+
+- **Cruces de pisos (bisección):** se encontraron 23 cruces de pisos intermedios, todos los que
+  había (se buscan los pisos entre el de salida y el de llegada). Por ejemplo, en el 0→5
+  (recorrido 4) cruza los pisos 1, 2, 3 y 4 en 82,4; 84,4; 86,4 y 88,4 s: uno cada ~2,0 s, o sea
+  ~1,25 m/s con pisos de ~2,5 m, que es la velocidad de crucero.
+- **Datos:** 63 004 muestras del IMU y 7 876 del barómetro, 0 perdidas; 200,000 Hz al inicio y al
+  final.
+- **Ruido del acelerómetro en el ascensor: 0,095 m/s²** (reposo inicial de 0 a 5,8 s), 5 a 7 veces
+  más que sobre la mesa (0,013–0,018), porque el piso del ascensor vibra. |g| calibrado
+  9,759 m/s², inclinación 7,0°.
+- **Deriva del barómetro: ~0,7 m en 5 min.** El mismo piso da alturas distintas con el tiempo:
+  - piso 3: 10,70 m a los 40 s y 11,42 m a los 296 s (+0,72 m);
+  - piso 5: 15,77 m a los 98 s y 16,59 m a los 274 s (+0,82 m).
+
+  Equivale a ~6 Pa (1 Pa ≈ 0,12 m). El ruido de la altura barométrica en reposo es de 0,26 m
+  (2,2 Pa).
+
+### 5.6 Figuras
+
+**`resultados/ascensor_2026-11-26_ascensor.png`** (figura principal). **Qué mirar:**
 - Arriba, la altura: gris el barómetro, naranja la fusión, azul el acelerómetro con ZUPT (sin
-  barómetro). Las líneas punteadas son los pisos reales; los puntos negros, los cruces.
-  - Las mesetas de la fusión en los pisos 1, 3 y 5 quedan ~0,8 m **por encima** de su línea: es la
-    discrepancia PB→1.
-  - La azul sigue a las otras dos, pero se separa en tres saltos: en ~40 s (queda en 9,5 m en vez
-    de 10,7), en ~67 s (llega a PB en 1,5 m) y en ~273 s (se queda corta en el piso 5). Son los
-    recorridos 2, 3 y 11. En ellos el ascensor arrancó **0,3 a 0,5 s antes** del pulso de cierre,
-    así que la integración empieza con el ascensor ya en movimiento y pierde 0,17, 0,32 y 0,38 m/s.
-    Integrando desde 3 s antes, la velocidad al llegar baja a −0,04 a −0,10 m/s, como en los demás
-    recorridos. Los pulsos de esos recorridos son los originales; se dejaron así.
-- Abajo, la velocidad. La azul (sin ZUPT) no vuelve a 0 en las paradas. Cada recorrido le deja
-  ~−0,07 m/s (de −0,01 a −0,14), y en las paradas sigue bajando despacio (sesgo residual de
-  ~−0,004 m/s², unos −0,04 m/s por parada). Ese error se va acumulando. Las otras dos curvas
-  vuelven a 0 en cada parada (ZUPT). Crucero de ~±1,25 m/s.
+  barómetro). Las líneas punteadas son los pisos de la cinta y los puntos negros, los cruces.
+  Arriba de todo va el número de cada recorrido. Los recorridos 10 y 12, que no se evalúan, están
+  en rojo y con fondo rosado.
+  - En cada recorrido, las tres curvas suben o bajan lo mismo: es el desnivel de la tabla.
+  - En las paradas sobre PB, la naranja y la gris quedan por encima de su línea, cada vez más
+    hacia el final: es PB→1 más la deriva del barómetro. La azul no usa el barómetro y queda más
+    cerca de las líneas.
+- Abajo, la velocidad. La naranja y la verde vuelven a 0 en cada parada (ZUPT); el crucero es de
+  ~±1,25 m/s. La azul (sin ZUPT) no vuelve a 0: cada recorrido le deja ~−0,07 m/s y en las paradas
+  sigue bajando despacio (sesgo residual de ~−0,004 m/s²). Ese error se acumula: por eso, sin ZUPT,
+  el desnivel sale con errores de metros a decenas de metros.
 
-**Figura de apoyo:** `resultados/ascensor_2026-11-26_ascensor_error.png`.
-**Qué mirar:** sin restar el sesgo, el error observado (azul) sigue a ½·b·t² (naranja punteada).
-Restando el sesgo, el error observado (verde) queda muy por encima de la predicción por ruido
-(roja): 154 m contra 21 m al final. El ruido no lo explica: el sesgo que se mide en el reposo
-inicial no es el mismo durante toda la sesión, y cada recorrido deja además un poco de velocidad.
-Solo 0,003 m/s² de diferencia media ya dan ½·0,003·305² ≈ 140 m.
+**`resultados/ascensor_2026-11-26_ascensor_error.png`**. **Qué mirar:** sin restar el sesgo, el
+error de altura observado (azul) sigue a la predicción ½·b·t² (naranja punteada). Restando el sesgo,
+el observado (verde) queda muy por encima de la predicción por ruido (roja): 154 m contra 21 m al
+final. El sesgo medido en el reposo inicial no se mantiene igual toda la sesión. Una diferencia
+media de solo 0,003 m/s² ya da ½·0,003·305² ≈ 140 m.
 
-**Coherencia barómetro vs acelerómetro.** Desnivel de cada recorrido (llegada − salida):
-
-- En 8 de los 12 recorridos, barómetro y acelerómetro con ZUPT coinciden a 0,32 m o menos. Los
-  otros cuatro son el 2, el 3 y el 11 (pulso tardío, arriba) y el 8 (0,64 m).
-- **1→3 y 3→5 coinciden con la cinta:** recorrido 10 (1→3): real 5,00, barómetro 5,08,
-  acelerómetro 5,06 m. Recorrido 9 (3→1): real −5,00, barómetro −4,87, acelerómetro −5,02 m.
-  Recorrido 12 (5→3): real −4,96, barómetro −5,17, acelerómetro −5,09 m.
-- **PB→1 no coincide:** en el recorrido 1 (0→1) el barómetro da 5,73 m y la cinta 4,90 m. Los dos
-  sensores dicen ~5,7 m, y el error de +0,8 m aparece en todos los pisos sobre PB (piso 3 medido
-  10,7 m contra 9,90; piso 5, 15,8 contra 14,86). Por eso parece un error en la medida de PB→1 y no
-  en los sensores. **Se va a volver a medir PB→1**; por ahora `pisos.csv` deja 4,90 m.
-
-**Deriva del barómetro: ~0,7 m en 5 min.** El mismo piso da alturas distintas con el tiempo: piso 3,
-10,70 m a los 40 s y 11,42 m a los 296 s (+0,72 m). Piso 5, 15,77 m a los 98 s y 16,59 m a los
-274 s (+0,82 m). Equivale a ~6 Pa (1 Pa ≈ 0,12 m). Por eso los errores de la fusión crecen hacia el
-final de la sesión (+1,5 a +1,7 m en las últimas paradas). El ruido de la altura barométrica en
-reposo es de 0,26 m (2,2 Pa).
+**`resultados/ascensor_2026-11-26_senales.png`** (de `verificar`, todo el registro): aceleración,
+giroscopio, presión y temperatura. Se ven los 13 recorridos como pulsos de aceleración y escalones
+de presión (la presión baja al subir, ~20 Pa por cada piso de ~2,5 m). El 13 está al final,
+cortado: la presión sube y el registro termina antes de la meseta. La temperatura del BMP280 sube
+0,9 °C en los 5 min, porque el dispositivo acababa de encenderse.

@@ -32,7 +32,8 @@ VELOCIDAD_MIN_PENDIENTE = 1.0
 SENO_MAX = 0.1
 REBOTE_BOTON_S = 1.0
 BLOQUE_DERIVA_S = 600.0
-OPCIONES = {"botones": False, "recorte": 0.0, "hasta": None}
+OPCIONES = {"botones": False, "recorte": 0.0, "hasta": None, "recorridos": None}
+TOLERANCIA_PULSO_S = 0.1   # un pulso corregido "es original" si esta a menos de esto de uno de eventos.csv
 
 BMP280_EJEMPLO = {"dig_T1": 27504, "dig_T2": 26435, "dig_T3": -1000,
                   "dig_P1": 36477, "dig_P2": -10685, "dig_P3": 3024, "dig_P4": 2855,
@@ -63,6 +64,8 @@ Opciones (para cualquier comando con sesion):
   --botones      usar solo desde la primera hasta la ultima pulsacion del boton
   --recorte N    quitar N segundos al inicio y al final (despues de --botones si se usan los dos)
   --hasta T      usar la sesion solo hasta T segundos (tiempo desde la primera muestra del IMU)
+  --recorridos 1,2,5   (ascensor) solo esos recorridos entran en las tablas de error; los demas se
+                 siguen integrando (el ascensor si se movio)
 Archivos opcionales en la carpeta de la sesion:
   eventos_corregidos.csv  se usa en vez de eventos.csv (pulsos corregidos a mano)
   paradas.csv             piso de cada parada (ascensor), en vez del piso mas cercano"""
@@ -115,6 +118,8 @@ def leer_sesion(carpeta):
         ev = ev[np.concatenate([[True], np.diff(ev) > REBOTE_BOTON_S])]
     s["eventos"] = ev
     s["rebotes"] = len(eventos) - len(ev)
+    # pulsos tal como salieron del firmware, para saber cuales de los corregidos son originales
+    s["eventos_csv"] = (pd.read_csv(os.path.join(carpeta, "eventos.csv"))["t_us"].to_numpy() - t0) / 1e6
     if meta.get("firmware_version") == "simulador":
         print("AVISO: sesion SIMULADA (solo sirve para probar el codigo)")
     return recortar(s)
@@ -644,6 +649,27 @@ def leer_paradas(carpeta, n_paradas, r):
     return pisos
 
 
+def pulsos_originales(s, k):
+    # True si los dos pulsos del recorrido k (1, 2, ...) estan en eventos.csv (no se inventaron ni movieron)
+    par = s["eventos"][2 * (k - 1):2 * k]
+    return all(np.min(np.abs(s["eventos_csv"] - e)) < TOLERANCIA_PULSO_S for e in par)
+
+
+def resumen_desnivel(r, titulo, ks, desnivel, real):
+    # error del desnivel (llegada - salida) de cada metodo, solo en los recorridos ks
+    decir(r, f"{titulo}: recorridos {', '.join(map(str, ks)) if ks else 'ninguno'}")
+    if not ks:
+        return {}
+    idx = np.array(ks) - 1
+    decir(r, "  metodo                       | error medio (m) | error RMS (m) | error max (m)")
+    rms = {}
+    for m in desnivel:
+        e = desnivel[m][idx] - real[idx]
+        rms[m] = np.sqrt(np.mean(e ** 2))
+        decir(r, f"  {m:28s} | {e.mean():+9.3f} | {rms[m]:9.3f} | {np.abs(e).max():9.3f}")
+    return rms
+
+
 def comando_ascensor(carpeta):
     s = leer_sesion(carpeta)
     r = []
@@ -697,27 +723,68 @@ def comando_ascensor(carpeta):
         niveles.append(np.mean(grupo))
         nombre_ref = "barometro (pisos.csv vacio: NO es error real, es acuerdo acelerometro-barometro)"
     decir(r, f"Referencia en cada parada: {nombre_ref}")
-    decir(r, "metodo | error RMS en paradas (m) | error max (m) | altura final (m)")
-    errores = {}
-    for k in est:
-        e = h_paradas[k] - ref
-        errores[k] = e
-        decir(r, f"  {k:28s} | {np.sqrt(np.mean(e ** 2)):10.3f} | {np.abs(e).max():10.3f} | {est[k][-1]:9.3f}")
-    decir(r, "parada | piso | t (s) | baro (m) | trapecio+ZUPT (m) | fusion (m) | referencia (m) | error fusion (m)")
+    n_rec = len(paradas) - 1
+    evaluar = list(range(1, n_rec + 1)) if OPCIONES["recorridos"] is None else [k for k in OPCIONES["recorridos"] if 1 <= k <= n_rec]
+    if piso_de_parada is None:
+        decir(r, "metodo | error RMS en paradas (m) | error max (m) | altura final (m)")
+        errores = {}
+        for k in est:
+            e = h_paradas[k] - ref
+            errores[k] = e
+            decir(r, f"  {k:28s} | {np.sqrt(np.mean(e ** 2)):10.3f} | {np.abs(e).max():10.3f} | {est[k][-1]:9.3f}")
+        resultado = f"RMS fusion {np.sqrt(np.mean(errores['fusion acel+baro + ZUPT'] ** 2)):.3f} m vs {nombre_ref.split(' (')[0]}"
+    decir(r, "Altura absoluta en cada parada" + (" (solo informativa: la evaluacion es por desnivel, abajo)" if piso_de_parada else ""))
+    decir(r, "parada | piso | t (s) | baro (m) | trapecio+ZUPT (m) | fusion (m) | referencia (m) | fusion - ref (m)")
     for j, (i0, i1) in enumerate(paradas):
         piso = "-" if piso_de_parada is None else piso_de_parada[j]
         decir(r, f"  {j:2d} | {piso} | {t[i0]:7.1f} | {h_paradas['solo barometro'][j]:7.2f} | {h_paradas['trapecio - sesgo + ZUPT'][j]:7.2f} | "
-                 f"{h_paradas['fusion acel+baro + ZUPT'][j]:7.2f} | {ref[j]:7.2f} | {errores['fusion acel+baro + ZUPT'][j]:+.3f}")
+                 f"{h_paradas['fusion acel+baro + ZUPT'][j]:7.2f} | {ref[j]:7.2f} | {h_paradas['fusion acel+baro + ZUPT'][j] - ref[j]:+.3f}")
     if piso_de_parada is not None:
-        # Desnivel de cada recorrido: compara los metodos entre si (coherencia) y con la cinta.
-        decir(r, "Desnivel de cada recorrido (altura de la parada de llegada - la de salida):")
-        decir(r, "recorrido | real (m) | baro (m) | trapecio+ZUPT (m) | fusion (m) | baro - acel (m) | fusion - real (m)")
-        for k in range(len(paradas) - 1):
-            d = {m: h_paradas[m][k + 1] - h_paradas[m][k] for m in ["solo barometro", "trapecio - sesgo + ZUPT", "fusion acel+baro + ZUPT"]}
-            real = ref[k + 1] - ref[k]
-            decir(r, f"  {k + 1:2d} {piso_de_parada[k]}->{piso_de_parada[k + 1]} | {real:6.2f} | {d['solo barometro']:6.2f} | "
-                     f"{d['trapecio - sesgo + ZUPT']:6.2f} | {d['fusion acel+baro + ZUPT']:6.2f} | "
-                     f"{d['solo barometro'] - d['trapecio - sesgo + ZUPT']:+.2f} | {d['fusion acel+baro + ZUPT'] - real:+.2f}")
+        # Evaluacion por DESNIVEL de cada recorrido (llegada - salida): no depende de la altura
+        # absoluta de cada piso, solo de la distancia entre los dos pisos del recorrido.
+        desnivel = {m: np.diff(h_paradas[m]) for m in est}
+        real = np.diff(ref)
+        toca_pb = {k: 0 in piso_de_parada[k - 1:k + 1] for k in range(1, n_rec + 1)}
+        original = {k: pulsos_originales(s, k) for k in range(1, n_rec + 1)}
+        decir(r, f"Recorridos evaluados: {', '.join(map(str, evaluar))}"
+                 + ("" if OPCIONES["recorridos"] is None else " (--recorridos; los demas se integran pero no entran en los errores)"))
+        decir(r, "Desnivel de cada recorrido (m). Evaluado: entra en los errores. PB: toca la planta baja. "
+                 f"Orig.: sus dos pulsos estan en eventos.csv (a menos de {TOLERANCIA_PULSO_S} s)")
+        decir(r, "rec | pisos | evaluado | PB | orig. | real | baro | trapecio+ZUPT | rectangulo+ZUPT | fusion | baro - trap")
+        for k in range(1, n_rec + 1):
+            d = {m: desnivel[m][k - 1] for m in est}
+            decir(r, f"  {k:2d} | {piso_de_parada[k - 1]}->{piso_de_parada[k]} | {'si' if k in evaluar else 'NO'} | "
+                     f"{'si' if toca_pb[k] else 'no'} | {'si' if original[k] else 'no'} | {real[k - 1]:6.2f} | {d['solo barometro']:6.2f} | "
+                     f"{d['trapecio - sesgo + ZUPT']:6.2f} | {d['rectangulo - sesgo + ZUPT']:6.2f} | {d['fusion acel+baro + ZUPT']:6.2f} | "
+                     f"{d['solo barometro'] - d['trapecio - sesgo + ZUPT']:+.2f}")
+        sin_pb = [k for k in evaluar if not toca_pb[k]]
+        con_pb = [k for k in evaluar if toca_pb[k]]
+        decir(r, "Error del desnivel (metodo - cinta):")
+        rms_principal = resumen_desnivel(r, "VALIDACION PRINCIPAL, sin pasar por PB", sin_pb, desnivel, real)
+        resumen_desnivel(r, "Recorridos que tocan PB (incluyen la altura PB->1 de la cinta)", con_pb, desnivel, real)
+        resumen_desnivel(r, "Todos los evaluados", evaluar, desnivel, real)
+        if s["archivo_eventos"] != "eventos.csv":
+            orig = [k for k in evaluar if original[k]]
+            decir(r, "Validacion extra: lo mismo solo con los recorridos de pulsos 100 % originales "
+                     "(si sale parecido, las correcciones de pulsos no sesgaron el resultado)")
+            resumen_desnivel(r, "  originales sin pasar por PB", [k for k in orig if not toca_pb[k]], desnivel, real)
+            resumen_desnivel(r, "  originales que tocan PB", [k for k in orig if toca_pb[k]], desnivel, real)
+            resumen_desnivel(r, "  todos los originales", orig, desnivel, real)
+        if 1 in alturas and con_pb:
+            # Cada recorrido con PB da una estimacion de la altura PB->1: |desnivel medido| menos la
+            # distancia (de la cinta) entre el piso 1 y el otro piso del recorrido.
+            decir(r, f"Altura PB->1 que implica cada recorrido con PB (cinta: {alturas[1] - alturas[0]:.2f} m):")
+            decir(r, "rec | pisos | baro | trapecio+ZUPT | rectangulo+ZUPT | fusion")
+            est_pb1 = {m: [] for m in ["solo barometro", "trapecio - sesgo + ZUPT", "rectangulo - sesgo + ZUPT", "fusion acel+baro + ZUPT"]}
+            for k in con_pb:
+                otro = max(piso_de_parada[k - 1:k + 1])
+                for m in est_pb1:
+                    est_pb1[m].append(abs(desnivel[m][k - 1]) - (alturas[otro] - alturas[1]))
+                decir(r, f"  {k:2d} | {piso_de_parada[k - 1]}->{piso_de_parada[k]} | " + " | ".join(f"{est_pb1[m][-1]:5.2f}" for m in est_pb1))
+            decir(r, "  media    | " + " | ".join(f"{np.mean(v):5.2f}" for v in est_pb1.values())
+                     + " ; desv. est. | " + " | ".join(f"{np.std(v, ddof=1) if len(v) > 1 else 0:5.2f}" for v in est_pb1.values()))
+        resultado = (f"desnivel sin PB (rec {','.join(map(str, sin_pb))}): RMS trapecio+ZUPT "
+                     f"{rms_principal.get('trapecio - sesgo + ZUPT', np.nan):.3f} m, fusion {rms_principal.get('fusion acel+baro + ZUPT', np.nan):.3f} m")
     cruces = []
     for k, (i0, i1) in enumerate(tramos(mov)):
         if piso_de_parada is not None:
@@ -756,9 +823,17 @@ def comando_ascensor(carpeta):
     ax[1].plot(t, v_zupt, lw=1.0, label="trapecio - sesgo + ZUPT")
     ax[1].plot(t, v_f, lw=1.0, label="fusion acel+baro")
     ax[1].set(xlabel="tiempo (s)", ylabel="velocidad vertical (m/s)")
-    for a in ax:
+    for k, (i0, i1) in enumerate(tramos(mov)):
+        # numero de cada recorrido arriba; los que no se evaluan, en rojo y sombreados
+        fuera = k + 1 not in evaluar
+        ax[0].text((t[i0] + t[i1 - 1]) / 2, 0.99, str(k + 1), transform=ax[0].get_xaxis_transform(),
+                   ha="center", va="top", fontsize=9, color="red" if fuera else "k")
+        if fuera:
+            for a in ax:
+                a.axvspan(t[i0], t[i1 - 1], color="red", alpha=0.08, lw=0)
+    for a, lugar in zip(ax, ["lower right", "upper right"]):
         marcar_eventos(a, s["eventos"])
-        a.legend(loc="upper right", fontsize=8)
+        a.legend(loc=lugar, fontsize=8)
     guardar_figura(fig, f"{s['nombre']}_ascensor.png")
     fig, ax = plt.subplots(figsize=(7, 4.5))
     ax.semilogy(t[1:], np.abs(est["trapecio sin correccion"] - h_f)[1:], lw=0.8, label="observado sin restar sesgo")
@@ -774,8 +849,7 @@ def comando_ascensor(carpeta):
     duraciones = [t[i1 - 1] - t[i0] for i0, i1 in tramos(mov)]
     fila.update({"desplazamiento_m": f"{h_f.max() - h_f.min():.2f}", "vel_max_ms": f"{np.abs(v_f).max():.2f}",
                  "acel_max_ms2": f"{np.abs(a_corr[mov]).max():.2f}",
-                 "duracion_tramos_s": ";".join(f"{d:.1f}" for d in duraciones),
-                 "resultado": f"RMS fusion {np.sqrt(np.mean(errores['fusion acel+baro + ZUPT'] ** 2)):.3f} m vs {nombre_ref.split(' (')[0]}"})
+                 "duracion_tramos_s": ";".join(f"{d:.1f}" for d in duraciones), "resultado": resultado})
     agregar_bitacora(fila)
 
 
@@ -927,6 +1001,10 @@ def main():
     if "--hasta" in args:
         i = args.index("--hasta")
         OPCIONES["hasta"] = float(args[i + 1])
+        del args[i:i + 2]
+    if "--recorridos" in args:
+        i = args.index("--recorridos")
+        OPCIONES["recorridos"] = [int(k) for k in args[i + 1].split(",")]
         del args[i:i + 2]
     comandos = {"verificar": comando_verificar, "reposo": comando_reposo, "caras": comando_caras, "ascensor": comando_ascensor}
     if len(args) == 1 and args[0] == "metodos":

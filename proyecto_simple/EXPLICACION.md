@@ -195,9 +195,13 @@ Si la sesión de caras es simulada (`firmware_version` = `simulador`), el result
      de otro piso: en el ascensor real, una parada en el piso 3 medida a 11,4 m quedaba en el piso 4;
    - si `pisos.csv` está vacío, con el barómetro: eso **no es error real**, es cuánto coinciden
      acelerómetro y barómetro.
-   Con `paradas.csv` además se imprime el **desnivel de cada recorrido** (llegada − salida) según
-   el barómetro, el acelerómetro con ZUPT y la fusión, junto al real. Así se ve si los dos sensores
-   coinciden entre sí y con la cinta, tramo por tramo.
+   Con `paradas.csv`, la evaluación pasa a ser por **desnivel de cada recorrido** (llegada −
+   salida): cada método contra la cinta, tramo por tramo. La altura absoluta de las paradas se
+   imprime solo como información. `resumen_desnivel` da el error medio, el RMS y el máximo de cada
+   método en tres grupos: recorridos sin PB (validación principal), con PB y todos. Con
+   `--recorridos` solo entran los recorridos elegidos. Con `eventos_corregidos.csv` se repite lo
+   mismo solo con los recorridos de pulsos originales. La ventaja del desnivel es que no depende de
+   la altura absoluta de cada piso, solo de la distancia entre los dos pisos del recorrido.
 9. **Cruces de piso:** en cada tramo el ascensor va en una sola dirección, así que
    f(t) = h(t) − h_piso cambia de signo una sola vez entre el inicio y el fin del tramo. La bisección
    encuentra ese instante (h(t) entre muestras se obtiene con `interpolar`). Solo se buscan pisos
@@ -208,10 +212,14 @@ Si la sesión de caras es simulada (`firmware_version` = `simulador`), el result
     ruido, que da σ_h ≈ ruido·√dt·t^1,5/√3. Se compara con lo observado (contra la fusión) en la
     figura `*_ascensor_error.png`.
 
-Con el ascensor real (12 recorridos): error RMS en las paradas de 308 m sin correcciones, 68 m
-restando el sesgo, 1,41 m con ZUPT y 0,99 m con la fusión. La mayor parte del error de la fusión es
-la altura PB→1 de la cinta, que los dos sensores ven ~0,8 m más alta, y la deriva del barómetro
-(~0,7 m en 5 min).
+Con el ascensor real se evalúan 10 de los 12 recorridos (`--recorridos`) por su **desnivel**
+(llegada − salida), porque la altura PB→1 de la cinta parece mal medida. En los que no pasan por
+PB, el error RMS es de 0,106 m con trapecio + ZUPT, 0,28 m con el barómetro y 60 m sin
+correcciones. `pulsos_originales` marca los recorridos cuyos dos pulsos están en `eventos.csv`;
+con ellos solos el error sale parecido (0,121 m), así que corregir los pulsos no sesgó el
+resultado. Cada recorrido con PB da una estimación de PB→1 = |desnivel| − (distancia de cinta del
+piso 1 al otro piso): ~5,5 m con el barómetro y ~5,3 m con el acelerómetro, contra 4,90 m de la
+cinta.
 
 Lo que salió con el ascensor simulado (pisos sintéticos, solo para probar): sin correcciones, ~12 m
 de error; restando el sesgo, ~5 m; con ZUPT, 0,05 m. La fusión dio 0,20 m porque el barómetro
