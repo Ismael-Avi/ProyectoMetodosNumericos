@@ -19,3 +19,8 @@ fecha_proceso,comando,sesion,firmware,duracion_s,recorte_s,desplazamiento_m,vel_
 2026-11-26 16:29:42,ascensor,ascensor_2026-11-26,0.1,305.0,0.0-305.0,16.80,1.33,5.89,12.4;10.4;15.5;19.8;16.1;15.5;20.5;14.8;12.1;8.7;11.2;12.7,RMS fusion 0.989 m vs piso de cada parada,
 2026-11-26 16:45:03,verificar,ascensor_2026-11-26,0.1,315.0,,,,,,perdidas imu=0 baro=0; fs=200.00 Hz,
 2026-11-26 16:45:42,ascensor,ascensor_2026-11-26,0.1,305.0,0.0-305.0,16.80,1.33,5.89,12.4;11.7;17.0;19.8;16.1;15.5;20.5;14.8;12.1;8.7;12.7;12.7,"desnivel sin PB (rec 2,5,6,9,11): RMS trapecio+ZUPT 0.106 m, fusion 0.293 m",
+2026-11-26 17:23:01,verificar,sesion_002,0.1,142.4,,,,,,perdidas imu=0 baro=0; fs=200.00 Hz,
+2026-11-26 17:23:04,verificar,reposo_90min_2026-11-21_1915-2049,0.1,5694.3,,,,,,perdidas imu=0 baro=0; fs=200.00 Hz,
+2026-11-26 17:23:07,verificar,caras_2026-11-24v1,0.1,481.5,,,,,,perdidas imu=0 baro=0; fs=200.00 Hz,
+2026-11-26 17:23:09,verificar,caras_2026-11-24,0.1,746.7,,,,,,perdidas imu=0 baro=0; fs=200.00 Hz,
+2026-11-26 17:23:13,metodos,-,,,,,,,,"bmp280 OK; orden rect 1.00, trap 2.00",

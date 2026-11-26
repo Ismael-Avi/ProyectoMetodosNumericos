@@ -5,6 +5,8 @@ registro automático que deja `navegacion.py` cada vez que se corre un comando, 
 
 Todos los números de este documento salen de los archivos de `datos/` o de correr `navegacion.py`
 (corridas del 24/11/2026; las del ascensor, del 26/11/2026). Lo que falta está marcado con **TODO**.
+Las fechas son de 2026. Cuando no se sabe el día en que pasó algo, se pone el día en que se anotó
+(primer commit que lo menciona).
 
 ## 1. Integrantes
 
@@ -14,7 +16,18 @@ Todos los números de este documento salen de los archivos de `datos/` o de corr
 
 ## 2. Experimentos
 
-Formato de los datos y configuración del sensor: [`datos/LEEME.md`](datos/LEEME.md).
+Formato de los datos y configuración del sensor: [`datos/LEEME.md`](datos/LEEME.md). Componentes,
+cómo se verificó cada uno y conexiones: [`COMPONENTES.md`](COMPONENTES.md).
+
+**Montaje del dispositivo (fotos del 26/11):**
+
+- [`fotos/01_montaje_protoboard.jpeg`](fotos/01_montaje_protoboard.jpeg): el montaje abierto. El
+  ESP32, el GY-91 y el módulo microSD van en una protoboard fijada dentro de la caja negra; el
+  pulsador rojo atraviesa la pared de la caja (cables enrollados, sin soldar).
+- [`fotos/02_caja_cerrada.jpeg`](fotos/02_caja_cerrada.jpeg): la caja cerrada con su tapa, el
+  pulsador afuera y el cable de alimentación.
+- [`fotos/03_ascensor.jpeg`](fotos/03_ascensor.jpeg): montaje del ascensor (sección 2.5). La caja
+  negra va dentro de una caja de cartón, en el piso del ascensor, junto a la power bank.
 
 ### 2.1 `sesion_002`: reposo corto de prueba
 
@@ -254,7 +267,7 @@ python navegacion.py caras     datos/caras_2026-11-24      (para dejar la calibr
 | Fecha y hora | 26/11/2026 (TODO: hora) |
 | Lugar | edificio de PB + 5 pisos, con acceso solo a PB, 1, 3 y 5 (TODO: nombre del edificio) |
 | Superficie | piso del ascensor |
-| Montaje | caja apoyada en el piso del ascensor |
+| Montaje | caja negra dentro de una caja de cartón, apoyada en el piso del ascensor junto a la power bank ([foto 03](fotos/03_ascensor.jpeg)) |
 | Orientación | inclinación de 7,0° respecto a la vertical (medida con `ascensor`, calibrado) |
 | Alimentación | power bank por el pin V5 |
 | Duración | 315,0 s (5,3 min); se usa hasta 305 s |
@@ -375,52 +388,66 @@ rojo), `resultados/ascensor_2026-11-26_ascensor_error.png`,
 
 ## 3. Problemas encontrados y cómo se resolvieron
 
-| Problema | Qué pasaba | Cómo se resolvió |
-|---|---|---|
-| Rebote del pulsador sin soldar | Una pulsación quedaba registrada dos veces. En el reposo de 90 min, la pulsación final aparece dos veces a 0,40 s | Antirrebote de 200 ms en el firmware (interrupción `isrBoton`) y, como no alcanzó, filtro de 1 s en Python (`REBOTE_BOTON_S`): las pulsaciones a menos de 1 s de la anterior se ignoran. Solución definitiva: soldar el pulsador (pendiente) |
-| Abrir el Serial Monitor reinicia el ESP32 | Al abrir el monitor serie, el adaptador USB reinicia el ESP32. El firmware empieza a grabar al encender y crea una carpeta `sesion_NNN` nueva en cada arranque, con `t_us` desde cero | Por protocolo: no abrir el Serial Monitor durante una grabación. Después de cada grabación se verifica que haya una sola carpeta y que `seq` sea continuo (`verificar`) |
-| Cortar la energía parte la sesión en dos carpetas | Cada encendido crea una carpeta nueva. Si la energía se corta a mitad de un experimento, quedan dos carpetas y el reloj `t_us` vuelve a empezar. Pasaba porque la power bank se apagaba al estar descargada | Cargar la power bank antes de grabar. En el reposo de 95 min se verificó que no hubo cortes: una sola carpeta, `seq` continuo (0 muestras perdidas) e intervalo máximo entre muestras de 5,007 ms |
-| Deriva de la presión por el clima | En el reposo de 90 min la presión subió 0,80 hPa sin mover el dispositivo. Equivale a 9,65 m de altura falsa | Medir P0 (la presión de referencia) en el reposo inicial de cada sesión, en vez de usar un valor fijo |
-| Calibración simulada con aspecto de real | La única `resultados/calibracion.json` venía de la sesión **simulada** `caras` (ver `bitacora.csv`), y `ascensor` y `metro` la cargaban sin avisar. Con datos reales se habría aplicado un sesgo y una escala inventados | El 23/11/2026 se movió a `resultados/simulados/calibracion_simulada.json`. `navegacion.py` solo carga `resultados/calibracion.json`, que tiene que salir de una sesión real de `caras`; si falta, `ascensor` y `metro` avisan y siguen sin calibrar. Si `caras` procesa una sesión simulada, guarda en `resultados/simulados/`. Desde el 24/11/2026 `resultados/calibracion.json` sale de la sesión real `caras_2026-11-24` |
-| Caras inclinadas o incompletas en la calibración | En el primer intento faltó la cara y− y las caras quedaron inclinadas hasta 17°. En el segundo (`caras_2026-11-24v1`), inclinadas 3° a 9° y sin posiciones para comprobar | Fijar la protoboard dentro de una caja y apoyar la caja en sus caras (desde el segundo intento); dejar las caras lo más verticales posible y agregar posiciones inclinadas para comprobar. El tercer intento (`caras_2026-11-24`) es la calibración oficial |
-| Pulsos faltantes, dobles o de más en el ascensor | En `ascensor_2026-11-26` faltan pulsos en los recorridos 10, 12 y 13, hay rebotes que pasan el filtro del firmware, y el primer pulso fue una marca de inicio. No se pueden armar los pares cierre/apertura | `eventos_corregidos.csv` en la carpeta de la sesión, escrito a mano (4 pulsos sacados del acelerómetro). `navegacion.py` lo usa en vez de `eventos.csv` y lo dice. `eventos.csv` queda tal como salió de la microSD |
-| Recorrido cortado al final | El recorrido 13 del ascensor terminó sin reposo final (se apagó al llegar). Sin reposo final el ZUPT no tiene con qué corregir | Opción `--hasta T` para usar la sesión solo hasta T segundos (305 s en el ascensor) |
-| Parada asignada al piso equivocado | Con el "piso más cercano", la última parada del ascensor (piso 3, medida a 11,4 m) quedaba en el piso 4 | `paradas.csv` en la carpeta de la sesión, con el piso de cada parada. Si existe, se usa como referencia |
-| Pulso de cierre después de que el ascensor arranca | En 3 recorridos (2, 3, 11) se pulsó 0,3–0,5 s tarde; la integración perdía la primera parte de la aceleración (hasta 0,38 m/s) | Se adelantaron esos cierres en `eventos_corregidos.csv` (inicio de la aceleración menos ~1 s). Se comprobó con los 6 recorridos de pulsos 100 % originales que la corrección no sesga el error (sección 2.5). Para otra vez: pulsar antes de que se cierre la puerta |
-| Altura PB→1 dudosa y sin poder volver a medir | Barómetro y acelerómetro dan PB→1 de ~5,3–5,5 m contra 4,90 m de la cinta; los tramos 1→3 y 3→5 sí coinciden | Evaluar por desnivel de cada recorrido, con la validación principal en los recorridos que no pasan por PB; los que tocan PB se muestran aparte, como hallazgo |
-| Calentamiento inicial del chip | La temperatura del BMP280 sube ~1,1 °C en los primeros ~2 min y luego baja hasta estabilizarse hacia el minuto 18–20. En ese tramo el sesgo de gx cambia más | Se midió con la deriva por bloques de `reposo`. Se mide el sesgo en el reposo inicial de cada sesión. TODO: decidir si se enciende el dispositivo ~20 min antes de los experimentos |
+| Fecha | Problema | Qué pasaba | Cómo se resolvió |
+|---|---|---|---|
+| 21/11 (reposo de 90 min); otra vez el 26/11 (ascensor) | Rebote del pulsador sin soldar | Una pulsación quedaba registrada dos veces. En el reposo de 90 min, la pulsación final aparece dos veces a 0,40 s | Antirrebote de 200 ms en el firmware (interrupción `isrBoton`) y, como no alcanzó, filtro de 1 s en Python (`REBOTE_BOTON_S`): las pulsaciones a menos de 1 s de la anterior se ignoran. Solución definitiva: soldar el pulsador (pendiente) |
+| anotado el 23/11 | Abrir el Serial Monitor reinicia el ESP32 | Al abrir el monitor serie, el adaptador USB reinicia el ESP32. El firmware empieza a grabar al encender y crea una carpeta `sesion_NNN` nueva en cada arranque, con `t_us` desde cero | Por protocolo: no abrir el Serial Monitor durante una grabación. Después de cada grabación se verifica que haya una sola carpeta y que `seq` sea continuo (`verificar`) |
+| anotado el 23/11 | Cortar la energía parte la sesión en dos carpetas | Cada encendido crea una carpeta nueva. Si la energía se corta a mitad de un experimento, quedan dos carpetas y el reloj `t_us` vuelve a empezar. Pasaba porque la power bank se apagaba al estar descargada | Cargar la power bank antes de grabar. En el reposo de 95 min se verificó que no hubo cortes: una sola carpeta, `seq` continuo (0 muestras perdidas) e intervalo máximo entre muestras de 5,007 ms |
+| 21/11 (reposo de 90 min) | Deriva de la presión por el clima | En el reposo de 90 min la presión subió 0,80 hPa sin mover el dispositivo. Equivale a 9,65 m de altura falsa | Medir P0 (la presión de referencia) en el reposo inicial de cada sesión, en vez de usar un valor fijo |
+| 23/11 | Calibración simulada con aspecto de real | La única `resultados/calibracion.json` venía de la sesión **simulada** `caras` (ver `bitacora.csv`), y `ascensor` y `metro` la cargaban sin avisar. Con datos reales se habría aplicado un sesgo y una escala inventados | El 23/11/2026 se movió a `resultados/simulados/calibracion_simulada.json`. `navegacion.py` solo carga `resultados/calibracion.json`, que tiene que salir de una sesión real de `caras`; si falta, `ascensor` y `metro` avisan y siguen sin calibrar. Si `caras` procesa una sesión simulada, guarda en `resultados/simulados/`. Desde el 24/11/2026 `resultados/calibracion.json` sale de la sesión real `caras_2026-11-24` |
+| 24/11 | Caras inclinadas o incompletas en la calibración | En el primer intento faltó la cara y− y las caras quedaron inclinadas hasta 17°. En el segundo (`caras_2026-11-24v1`), inclinadas 3° a 9° y sin posiciones para comprobar | Fijar la protoboard dentro de una caja y apoyar la caja en sus caras (desde el segundo intento); dejar las caras lo más verticales posible y agregar posiciones inclinadas para comprobar. El tercer intento (`caras_2026-11-24`) es la calibración oficial |
+| 26/11 | Pulsos faltantes, dobles o de más en el ascensor | En `ascensor_2026-11-26` faltan pulsos en los recorridos 10, 12 y 13, hay rebotes que pasan el filtro del firmware, y el primer pulso fue una marca de inicio. No se pueden armar los pares cierre/apertura | `eventos_corregidos.csv` en la carpeta de la sesión, escrito a mano (4 pulsos sacados del acelerómetro). `navegacion.py` lo usa en vez de `eventos.csv` y lo dice. `eventos.csv` queda tal como salió de la microSD |
+| 26/11 | Recorrido cortado al final | El recorrido 13 del ascensor terminó sin reposo final (se apagó al llegar). Sin reposo final el ZUPT no tiene con qué corregir | Opción `--hasta T` para usar la sesión solo hasta T segundos (305 s en el ascensor) |
+| 26/11 | Parada asignada al piso equivocado | Con el "piso más cercano", la última parada del ascensor (piso 3, medida a 11,4 m) quedaba en el piso 4 | `paradas.csv` en la carpeta de la sesión, con el piso de cada parada. Si existe, se usa como referencia |
+| 26/11 | Pulso de cierre después de que el ascensor arranca | En 3 recorridos (2, 3, 11) se pulsó 0,3–0,5 s tarde; la integración perdía la primera parte de la aceleración (hasta 0,38 m/s) | Se adelantaron esos cierres en `eventos_corregidos.csv` (inicio de la aceleración menos ~1 s). Se comprobó con los 6 recorridos de pulsos 100 % originales que la corrección no sesga el error (sección 2.5). Para otra vez: pulsar antes de que se cierre la puerta |
+| 26/11 | Altura PB→1 dudosa y sin poder volver a medir | Barómetro y acelerómetro dan PB→1 de ~5,3–5,5 m contra 4,90 m de la cinta; los tramos 1→3 y 3→5 sí coinciden | Evaluar por desnivel de cada recorrido, con la validación principal en los recorridos que no pasan por PB; los que tocan PB se muestran aparte, como hallazgo |
+| 21/11 (reposo de 90 min; se vio al analizarlo el 23/11) | Calentamiento inicial del chip | La temperatura del BMP280 sube ~1,1 °C en los primeros ~2 min y luego baja hasta estabilizarse hacia el minuto 18–20. En ese tramo el sesgo de gx cambia más | Se midió con la deriva por bloques de `reposo`. Se mide el sesgo en el reposo inicial de cada sesión. TODO: decidir si se enciende el dispositivo ~20 min antes de los experimentos |
 
 ## 4. Decisiones y por qué
 
-- **Datos crudos en el firmware y conversión en Python.** El enunciado pide guardar los datos tal
+- **Datos crudos en el firmware y conversión en Python** (desde el plan, 14/11). El enunciado pide guardar los datos tal
   como los entrega el sensor. Así, si cambia la calibración o se encuentra un error en la
   conversión, se vuelve a procesar sin repetir el experimento. Además el firmware queda más
   simple: solo lee y escribe enteros.
-- **200 Hz en el IMU y 25 Hz en el barómetro.** El enunciado pide 100 Hz o más; 200 Hz da margen.
+- **200 Hz en el IMU y 25 Hz en el barómetro** (plan del 14/11; comprobado el 21/11 con el reposo de 95 min). El enunciado pide 100 Hz o más; 200 Hz da margen.
   Con 200 Hz el filtro interno del MPU (~41 Hz en el giroscopio, ~45 Hz en el acelerómetro) queda
   por debajo de la mitad de la frecuencia de muestreo (100 Hz), y no hay aliasing. Leer el MPU por
   I2C a 400 kHz tarda ~0,4 ms, muy por debajo de los 5 ms entre muestras. El BMP280 con presión x8
   tarda ~22,5 ms por medición (~44 por segundo), así que 25 Hz alcanza y es un divisor entero de
   200 (una lectura cada 8 del IMU). En el reposo de 95 min no se perdió ninguna muestra.
-- **Dos tareas de FreeRTOS con una cola de 2000 muestras.** Escribir en la microSD a veces tarda
+- **Dos tareas de FreeRTOS con una cola de 2000 muestras** (firmware `registrador_v01`, en el repositorio desde el 21/11). Escribir en la microSD a veces tarda
   decenas de milisegundos. Si la lectura y la escritura estuvieran en el mismo lazo, en esos momentos
   se perderían muestras. La tarea de muestreo (núcleo 1, prioridad alta) solo lee y mete la muestra
   en la cola; la de escritura (núcleo 0) la vacía. 2000 muestras son 10 s de margen.
-- **La grabación empieza al encender y el botón solo marca eventos.** No hace falta ningún paso
+- **La grabación empieza al encender y el botón solo marca eventos** (mismo firmware, 21/11). No hace falta ningún paso
   extra para empezar a grabar, y el botón queda libre para marcar puertas y estaciones. Para
   terminar se apaga el dispositivo; el `flush` cada 1 s limita la pérdida a como máximo el último
   segundo. La contra es que cada encendido o reinicio crea una carpeta nueva (ver problemas).
-- **g = 9,77 m/s² para Quito.** Es el valor del enunciado. Lo comprobamos con la gravedad normal GRS80
+- **g = 9,77 m/s² para Quito** (14/11; fuente comprobada el 24/11). Es el valor del enunciado. Lo comprobamos con la gravedad normal GRS80
   en el ecuador (9,7803267715 m/s²; a 0,2° S la corrección por latitud es despreciable) menos la
   corrección de aire libre a 2850 m (0,3086 mGal/m × 2850 m ≈ 0,0088 m/s²): ~9,7715 m/s². La
   diferencia con 9,77 es 0,0015 m/s². El cálculo está en el README.
-- **Un solo script en Python (`navegacion.py`).** La primera versión (`procesamiento/`) tenía 32
+- **Un solo script en Python (`navegacion.py`)** (21/11, commit `5a3dab2`). La primera versión (`procesamiento/`) tenía 32
   archivos de Python sin contar las pruebas. Se rehízo en un solo archivo, con comandos (`verificar`, `reposo`, `caras`, `metodos`,
   `ascensor`, `metro`), para que cada integrante pueda leerlo de principio a fin y defenderlo. Los
   métodos numéricos del curso (rectángulo, trapecio, interpolación lineal, bisección) están hechos a
   mano.
+- **Corregir pulsos en un archivo aparte (`eventos_corregidos.csv`) y no tocar `eventos.csv`** (26/11).
+  Los datos crudos quedan tal como salieron de la microSD, y cualquiera puede ver qué se corrigió
+  comparando los dos archivos. El programa avisa en el reporte cuando usa los corregidos.
+- **Evaluar 10 recorridos del ascensor, elegidos por la calidad de los pulsos** (26/11): 1 a 9 y 11.
+  Criterio decidido antes de ver los errores: si el pulso existió pero a destiempo, se corrige su
+  tiempo; si nadie pulsó (10 y 12), el recorrido se descarta. Se comprobó que con solo los 6
+  recorridos de pulsos originales el error sale parecido (sección 2.5).
+- **Evaluar el ascensor por desnivel y no por altura absoluta** (26/11). No se puede volver a medir
+  PB→1, que parece mal medido. El desnivel entre los pisos 1, 3 y 5 no depende de PB→1, así que la
+  validación principal usa los recorridos que no pasan por PB.
+- **Solo datos reales en los resultados del avance** (26/11). Las sesiones simuladas quedan en
+  `resultados/simulados/` como prueba del código y para preparar el metro.
 
 ## 5. Uso de IA
+
+Del 14/11 al 26/11.
 
 **Qué se hizo con IA** (en los commits figura Claude como coautor: Claude Fable 5.2 en
 `procesamiento/` y en el primer firmware de PlatformIO, `firmware/`; Claude Opus 5.5 en
@@ -433,7 +460,10 @@ sin cambios al repo):
   el hardware.
 - Planificación: el documento de contexto del proyecto (`../CONTEXTO_PROYECTO.md`), el formato de
   archivos y el orden de las etapas.
-- Esta bitácora y `datos/LEEME.md`, a partir de los archivos y de la salida de `navegacion.py`.
+- Esta bitácora, `datos/LEEME.md`, `RESULTADOS_AVANCE.md`, `ENTREGABLES.md`, `COMPONENTES.md`,
+  `GUIA_ESTUDIO.md` y la presentación, a partir de los archivos y de la salida de `navegacion.py`.
+- Análisis del ascensor (26/11): detectar los arranques y paradas con el acelerómetro, los pulsos
+  tardíos y la estimación de PB→1.
 
 **Cómo se verificó:**
 
@@ -449,19 +479,40 @@ sin cambios al repo):
 
 **Errores de la IA que comprobamos:**
 
-1. **El chip no era el que suponía el plan.** El plan inicial hecho con IA (`CONTEXTO_PROYECTO.md`,
+1. **El chip no era el que suponía el plan** (plan del 14/11; detectado a más tardar el 21/11). El plan inicial hecho con IA (`CONTEXTO_PROYECTO.md`,
    sección 2 y el `meta.json` de ejemplo con `"chip_whoami": "0x71"`) suponía que el GY-91 traía un
    MPU-9250 con magnetómetro AK8963 (WHO_AM_I = 0x71). Leímos el registro WHO_AM_I y dio **0x70**:
    es un MPU-6500, **sin magnetómetro**. Así que el rumbo solo puede salir del giroscopio, y su error
-   crece con el tiempo. Las dos sesiones reales tienen `"chip_whoami": "0x70"` en `meta.json`.
-2. **Carpetas con fecha sin reloj.** El mismo plan proponía nombrar cada sesión
+   crece con el tiempo. Las cinco sesiones reales tienen `"chip_whoami": "0x70"` en `meta.json`
+   (la primera, `sesion_002`, del 21/11).
+2. **Carpetas con fecha sin reloj** (14/11). El mismo plan proponía nombrar cada sesión
    `sesion_YYYYMMDD_HHMMSS` (`CONTEXTO_PROYECTO.md`, sección 3). El ESP32 no tiene reloj de tiempo
    real, así que no sabe la fecha. Se cambió a carpetas numeradas `sesion_NNN` en el commit
    `094b716` ("Formato: carpetas sesion_NNN..."), y la fecha se anota en la bitácora. Por lo mismo,
    los archivos de la microSD tienen fecha 01/01/1980.
-3. **El antirrebote del firmware no alcanzó.** El firmware hecho con IA filtra 200 ms en la
+3. **El antirrebote del firmware no alcanzó** (21/11). El firmware hecho con IA filtra 200 ms en la
    interrupción del botón. Con el pulsador sin soldar hubo una doble pulsación a 0,40 s, que pasó
    ese filtro. Se agregó el filtro de 1 s en Python.
+4. **Fecha equivocada de `sesion_002`** (anotada el 23/11, corregida el 24/11). La bitácora redactada
+   con IA puso 20/11, aprox. 17:15. La sesión fue el 21/11, aprox. 10:15. Lo corrigieron los
+   integrantes al revisar la bitácora (commit `eaf8b18`). Desde entonces, la fecha y la hora de cada
+   sesión las dan los integrantes, no se deducen.
+5. **El recorrido 5 (5→1) clasificado como "toca PB"** (26/11). En las instrucciones del análisis
+   del ascensor, preparadas con ayuda de un asistente de IA, el recorrido 5 aparecía en la lista de
+   los que tocan la planta baja. Va del piso 5 al 1: no pasa por PB. Se detectó porque
+   `navegacion.py` no usa esa lista: decide qué recorridos tocan PB a partir de `paradas.csv`, y el
+   reporte puso el 5 en el grupo sin PB. La validación principal quedó con 2, 5, 6, 9 y 11.
+6. **PB→1 estimado en ~5,7 m con un solo dato** (26/11). La primera estimación (~5,7 m, "lo dicen el
+   barómetro y el acelerómetro") salió del barómetro en un solo recorrido, el 0→1 (5,74 m). Al
+   calcular PB→1 con los 5 recorridos que tocan PB y con los dos sensores, sale 5,50 ± 0,16 m con el
+   barómetro y 5,34 ± 0,27 m con el acelerómetro, o sea ~5,3–5,5 m. El acelerómetro mide 5,41 m
+   incluso en el 0→1. Se detectó al pedirle al programa la estimación por recorrido y por sensor
+   (sección 2.5 y `RESULTADOS_AVANCE.md`, sección 5.4).
+
+**Riesgo que no llegó a ser un error comprobado:** hubo dos firmwares escritos con IA. El de
+PlatformIO (`../firmware/`, 14/11, Claude Fable 5.2) se escribió antes de tener el hardware y **nunca
+se probó en el dispositivo**. El que se usa es `registrador_v01.ino`, el único probado (desde el
+21/11). Por eso el de PlatformIO no forma parte de la entrega.
 
 ## 6. Pendientes del avance
 
@@ -472,17 +523,31 @@ sin cambios al repo):
 - [x] **Ascensor.** Grabado el 26/11/2026 (`ascensor_2026-11-26`, sección 2.5): 13 recorridos en
   un edificio de PB + 5 pisos, 10 evaluados; `datos/pisos.csv` lleno. No se puede volver a grabar
   ni a medir PB→1: se evalúa por desnivel.
-- [ ] **Fotos del montaje** en `fotos/`.
-- [ ] **Presentación** en `presentacion/`. Pendiente: se hará después del ascensor.
+- [x] **Fotos del montaje** en `fotos/` (26/11; enlazadas arriba, en la sección 2).
+- [x] **Presentación**: `presentacion/presentacion.pptx` (26/11).
+- [ ] Llenar en `COMPONENTES.md` dónde se consiguió cada componente y su costo, y los TODO de
+  evidencia (salida de `esptool`, ID del BMP280, capacidad de la tarjeta y de la power bank).
 - [ ] Completar los TODO de este documento y de `datos/LEEME.md`.
 
 ## 7. Plan para el segundo parcial
 
-- **Metro:** ≥ 3 viajes de varias estaciones, en distintos días o sentidos, con el botón en cada
-  salida y llegada. Llenar `datos/estaciones.csv` (estaciones, coordenadas y distancia de cada
-  tramo, con fuente verificable) y `datos/viajes.csv` (estación inicial y sentido de cada viaje).
-- **Experimento propio** que ponga a prueba un límite del sistema. Pendiente: se definirá después
-  del ascensor.
+Escrito el 26/11, después del ascensor.
+
+- **Metro: al menos 3 viajes** de varias estaciones, en distintos días o sentidos, con el botón en
+  cada salida y llegada. Lo aprendido en el ascensor: pulsar **antes** de que arranque el tren (no
+  cuando ya se mueve), no olvidar ningún pulso, dejar al menos 10 s quieto al inicio y no apagar
+  el dispositivo antes de que el tren se detenga del todo.
+- **Coordenadas de las estaciones:** llenar `datos/estaciones.csv` (orden, nombre, latitud,
+  longitud y distancia de cada tramo) con una **fuente verificable** (OpenStreetMap o datos
+  oficiales del Metro de Quito), citada en la columna `fuente`. No inventar coordenadas. Llenar
+  también `datos/viajes.csv` (estación inicial y sentido de cada viaje).
+- **Qué esperamos del error** (`GUIA_ESTUDIO.md`, sección e): sin ZUPT, kilómetros de error en un
+  viaje completo; con ZUPT en cada estación, ~20 m en 22 km, dominado por el error de escala. Por
+  eso se usará la distancia conocida entre estaciones para ajustar la escala, y se volverá a medir
+  el sesgo del giroscopio en cada parada para el rumbo.
+- **Experimento propio** que ponga a prueba un límite del sistema. Pendiente de definir; ideas
+  anotadas: un registro de 90 min con las pilas AA (energía), o medir cuánto empeora el resultado
+  si se quita el ZUPT de algunas paradas.
 - **Montaje definitivo con pilas** (4 pilas AA con interruptor) en la caja rígida.
 - **Comparación con el trazado real:** distancia y velocidad por tramo, trayectoria sobre el mapa
   frente a la línea del metro, dispersión entre viajes, con y sin barómetro.

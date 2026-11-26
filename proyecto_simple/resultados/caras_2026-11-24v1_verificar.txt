@@ -7,5 +7,5 @@ Barometro: 12039 muestras, perdidas 0 (0.0000 %), seq repetidos o hacia atras: 0
   frecuencia real: inicio 25.000 Hz, final 25.000 Hz (nominal 25 Hz, ventanas de 60 s)
   periodo: medio 40000.0 us, jitter (desv. est.) 1.6 us, minimo 39847 us, maximo 40010 us
 Requisito >= 100 Hz: cumple; requisito 90 min sin perdidas: no (registro mas corto o con perdidas)
-Eventos del boton: 0 en [] s (se ignoraron 0 pulsaciones a menos de 1.0 s de la anterior: rebote)
+Eventos del boton (pulsos del boton: eventos.csv): 0 en [] s (se ignoraron 0 pulsaciones a menos de 1.0 s de la anterior: rebote)
 |a| medio 9.907 m/s² (g Quito 9.77), giroscopio medio [-4.053 -1.602 -0.909] °/s, presion media 73032.0 Pa, temperatura media 24.04 °C

@@ -47,6 +47,19 @@ Otros datos de `verificar`:
   al llegar: se analiza hasta 305 s (`--hasta 305`). Detalle en `../bitacora.md`, sección 2.5.
   Nombre `sesion_NNN` original: no registrado.
 
+### Condiciones de cada sesión
+
+Detalle completo (procedimiento, comandos y resultados) en `../bitacora.md`, sección 2. Presión y
+temperatura medias, de `verificar` (corridas del 26/11).
+
+| Sesión | Lugar | Superficie y montaje | Alimentación | Presión media | Temperatura del BMP280 | Pulsador |
+|---|---|---|---|---|---|---|
+| `sesion_002` | casa de Cesar | mesa nivelada; eje z hacia arriba (3,0°) | USB de la laptop | 732,7 hPa | 23,0 a 23,3 °C | sin pulsaciones |
+| `reposo_90min_2026-11-21_1915-2049` | casa de Ismael | mesa nivelada; protoboard inclinada 9,2° | power bank | 731,3 hPa | 25,0 a 26,3 °C | inicio y fin (más un rebote) |
+| `caras_2026-11-24v1` | casa de Cesar | mesa nivelada; protoboard fijada en la caja, seis caras | power bank | 730,3 hPa | 22,4 a 24,7 °C | sin pulsaciones |
+| `caras_2026-11-24` | casa de Cesar | mesa nivelada; protoboard fijada en la caja, seis caras y 8 posiciones inclinadas | power bank | 730,8 hPa | 24,6 a 26,0 °C | sin pulsaciones |
+| `ascensor_2026-11-26` | edificio de PB + 5 pisos | caja en una caja de cartón, en el piso del ascensor (inclinada 7,0°) | power bank por V5 | 729,8 hPa | 23,6 a 24,5 °C | cierre y apertura de puerta (con faltantes y rebotes; ver arriba) |
+
 Los archivos que vienen de la microSD tienen fecha de modificación 01/01/1980, porque el ESP32 no
 sabe la fecha. La fecha y la hora reales se anotan en `../bitacora.md`.
 
@@ -54,6 +67,22 @@ sabe la fecha. La fecha y la hora reales se anotan en `../bitacora.md`.
 
 Cada sesión es una carpeta con cuatro archivos. Todos los valores son **crudos**: el firmware no
 convierte nada. La conversión a unidades físicas la hace `navegacion.py` (`leer_sesion` y `bmp280`).
+
+### Unidades crudas de cada columna
+
+Ningún valor de `imu.csv`, `baro.csv` ni `eventos.csv` está en unidades físicas. Cada columna está
+en la unidad que entrega el sensor o el reloj del ESP32:
+
+| Archivo | Columna | Tipo | Unidad cruda | Conversión (detalle abajo) |
+|---|---|---|---|---|
+| `imu.csv`, `baro.csv` | `seq` | entero sin signo de 32 bits | número de muestra | — (un salto = muestra perdida) |
+| `imu.csv`, `baro.csv`, `eventos.csv` | `t_us` | entero de 64 bits | µs desde el arranque del ESP32 | `(t_us − t_us de la 1.ª muestra del IMU) / 10⁶` → s |
+| `imu.csv` | `ax, ay, az` | int16 | LSB; 1 LSB = 1/8192 g (±4 g) | `/ 8192 · 9,80665` → m/s² |
+| `imu.csv` | `gx, gy, gz` | int16 | LSB; 1 LSB = 1/65,5 °/s (±500 °/s) | `/ 65,5` → °/s, luego a rad/s |
+| `imu.csv` | `mx, my, mz` | vacío | — | no hay magnetómetro |
+| `baro.csv` | `adc_T` | entero de 20 bits | cuentas del ADC | fórmula de Bosch con `dig_T*` → °C |
+| `baro.csv` | `adc_P` | entero de 20 bits (19 bits útiles con presión ×8) | cuentas del ADC | fórmula de Bosch con `dig_P*` y `t_fine` → Pa |
+| `eventos.csv` | `evento` | entero | 1 = pulsación | — |
 
 ### `meta.json`
 

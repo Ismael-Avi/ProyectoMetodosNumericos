@@ -623,6 +623,8 @@ def comando_metodos():
     ax.loglog(pasos, e_rect, "o-", label="rectangulo")
     ax.loglog(pasos, e_trap, "s-", label="trapecio")
     ax.set(xlabel="paso dt (s)", ylabel="error en x al final (m)", title="Convergencia de la integracion doble")
+    ax.set_xticks(pasos, [f"{p:g}" for p in pasos])   # una etiqueta por paso probado (sin encimarse)
+    ax.xaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
     ax.legend()
     ax.grid(True, which="both", alpha=0.3)
     guardar_figura(fig, "metodos_convergencia.png")

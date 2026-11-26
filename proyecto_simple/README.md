@@ -10,7 +10,8 @@ Rutas relativas a `proyecto_simple/`:
 
 | Qué | Dónde |
 |---|---|
-| Presentación | [`presentacion/`](presentacion/) (pendiente: se hará después del ascensor) |
+| Lista de entregables | [`ENTREGABLES.md`](ENTREGABLES.md): ruta de cada entregable y qué archivo demuestra cada etapa alcanzada |
+| Presentación | [`presentacion/presentacion.pptx`](presentacion/presentacion.pptx) (se genera con [`presentacion/generar_presentacion.py`](presentacion/generar_presentacion.py)) |
 | Bitácora | [`bitacora.md`](bitacora.md) (escrita) y [`bitacora.csv`](bitacora.csv) (registro automático de cada comando) |
 | Firmware | [`firmware/registrador_v01/registrador_v01.ino`](firmware/registrador_v01/registrador_v01.ino) (C++, Arduino IDE 2.3.11 con el paquete esp32 de Espressif 3.3.12) |
 | Programa | [`navegacion.py`](navegacion.py), explicado en [`EXPLICACION.md`](EXPLICACION.md) |
@@ -18,15 +19,58 @@ Rutas relativas a `proyecto_simple/`:
 | Descripción de los datos | [`datos/LEEME.md`](datos/LEEME.md): tabla de sesiones, formato de cada archivo, conversión a unidades y configuración del sensor |
 | Resultados del avance | [`RESULTADOS_AVANCE.md`](RESULTADOS_AVANCE.md): resumen para el docente (reposo, seis caras y ascensor, con datos reales) |
 | Resultados | [`resultados/`](resultados/): figuras y reportes de las sesiones reales. Los de sesiones simuladas están aparte, en [`resultados/simulados/`](resultados/simulados/) |
-| Fotos del montaje | [`fotos/`](fotos/) (TODO: subir las fotos) |
+| Fotos del montaje | [`fotos/`](fotos/) (ver la sección [Fotos](#fotos)) |
+| Componentes | [`COMPONENTES.md`](COMPONENTES.md): modelo, cómo se verificó, configuración y conexiones |
+| Guía de estudio | [`GUIA_ESTUDIO.md`](GUIA_ESTUDIO.md): para que los integrantes entiendan cada figura, el error y los límites del sistema |
 
 ## Instalar
 
+Hace falta Python 3.10 o más nuevo (se probó con 3.14) y git. Desde una copia limpia:
+
 ```
-pip install -r requirements.txt
+git clone https://github.com/Ismael-Avi/ProyectoMetodosNumericos.git
+cd ProyectoMetodosNumericos/proyecto_simple
+python -m venv .venv
 ```
 
-Se probó con Python 3.14, numpy 2.5, pandas 3.1 y matplotlib 3.11. No hace falta scipy.
+Activar el entorno: en Windows (PowerShell) `.venv\Scripts\Activate.ps1`, en Windows (Git Bash)
+`source .venv/Scripts/activate`, en Linux o macOS `source .venv/bin/activate`. Después:
+
+```
+python -m pip install -r requirements.txt
+```
+
+Se probó así, desde un clon limpio, con numpy 2.5, pandas 3.1 y matplotlib 3.11 (26/11/2026). No
+hace falta scipy. `python -m pip` asegura que los paquetes se instalen en el mismo Python que va a
+correr el programa.
+
+Solo para volver a generar la presentación hace falta además `python -m pip install python-pptx`.
+
+## Reproducir todos los resultados del avance
+
+Desde `proyecto_simple/`, con el entorno activado. Cada comando escribe sus figuras y reportes en
+`resultados/` (sobrescribe los que hay) y agrega una fila a `bitacora.csv`:
+
+```
+python navegacion.py verificar datos/sesion_002
+python navegacion.py reposo    datos/sesion_002 --botones --recorte 5
+python navegacion.py verificar datos/reposo_90min_2026-11-21_1915-2049
+python navegacion.py reposo    datos/reposo_90min_2026-11-21_1915-2049 --botones --recorte 5
+python navegacion.py verificar datos/caras_2026-11-24v1
+python navegacion.py caras     datos/caras_2026-11-24v1
+python navegacion.py verificar datos/caras_2026-11-24
+python navegacion.py caras     datos/caras_2026-11-24
+python navegacion.py metodos
+python navegacion.py verificar datos/ascensor_2026-11-26
+python navegacion.py ascensor  datos/ascensor_2026-11-26 --hasta 305 --recorridos 1,2,3,4,5,6,7,8,9,11
+```
+
+**El orden importa en las caras:** `caras` guarda `resultados/calibracion.json`, que después usa
+`ascensor`. Por eso `caras_2026-11-24` (la calibración oficial) va después de `caras_2026-11-24v1`.
+Con este orden, `calibracion.json` sale idéntico al del repositorio (comprobado byte a byte).
+
+Opcionales: `python guia/estimar_error_metro.py` (figura de la guía de estudio) y
+`python presentacion/generar_presentacion.py` (presentación; necesita `python-pptx`).
 
 ## Carpetas
 
@@ -50,7 +94,11 @@ bitacora.csv             una fila por cada comando ejecutado
 bitacora.md              bitácora escrita: experimentos, problemas, decisiones, uso de IA
 RESULTADOS_AVANCE.md     resumen de resultados del avance, para el docente
 fotos/                   fotos del montaje
-presentacion/            presentación de la entrega
+presentacion/            presentación (presentacion.pptx), el script que la genera y el diagrama de conexiones
+guia/                    script de la estimación del error en el metro (para GUIA_ESTUDIO.md) y su figura
+ENTREGABLES.md           ruta de cada entregable y qué demuestra cada etapa
+COMPONENTES.md           componentes, verificación, configuración y conexiones
+GUIA_ESTUDIO.md          guía de estudio para los integrantes
 ```
 
 `datos/viajes.csv` no estaba en el plan original. Hace falta porque con solo `eventos.csv` el
@@ -69,7 +117,7 @@ Se corren desde la carpeta `proyecto_simple/`:
 | `caras` | calibración de seis caras; guarda `resultados/calibracion.json` (si la sesión es simulada, guarda `resultados/simulados/calibracion_simulada.json`, que ningún comando usa). Figura `*_caras.png`: \|g\| antes y después de calibrar en cada tramo quieto. Además muestra \|g\| calibrado en cada tramo quieto que no se usó (posiciones inclinadas): prueba de que \|g\| no cambia al girar | `python navegacion.py caras datos/caras_2026-11-24` |
 | `metodos` | prueba del BMP280 y de los métodos numéricos contra numpy y contra soluciones exactas | `python navegacion.py metodos` |
 | `ascensor` | altura y velocidad con dos métodos, ZUPT, barómetro, fusión; error del desnivel de cada recorrido (con y sin PB, y solo con pulsos originales), altura PB→1 implícita, cruces de piso | `python navegacion.py ascensor datos/ascensor_2026-11-26 --hasta 305 --recorridos 1,2,3,4,5,6,7,8,9,11` |
-| `metro` | rumbo, velocidad, distancia por tramo, trayectoria y dispersión entre viajes. **Por ahora solo probado con datos simulados** | `python navegacion.py metro datos/simulados/metro_1 datos/simulados/metro_2` |
+| `metro` | rumbo, velocidad, distancia por tramo, trayectoria y dispersión entre viajes. **Por ahora solo probado con datos simulados**, que no están en el repositorio (`datos/simulados/` no se sube a git): en un clon limpio este ejemplo da `FileNotFoundError`. Es para el segundo parcial | `python navegacion.py metro datos/simulados/metro_1 datos/simulados/metro_2` |
 
 **Opciones** (sirven con cualquier comando que lee una sesión):
 
@@ -131,6 +179,17 @@ ascensor (`ascensor_2026-11-26`, 13 recorridos, 10 evaluados). El resumen está 
 
 **El metro todavía no se ha grabado.** El comando `metro` se probó solo con sesiones simuladas, y
 sus resultados están en `resultados/simulados/`.
+
+## Fotos
+
+- [`fotos/01_montaje_protoboard.jpeg`](fotos/01_montaje_protoboard.jpeg): el montaje abierto. El
+  ESP32, el GY-91 y el módulo microSD van en una protoboard fijada dentro de la caja negra; el
+  pulsador rojo atraviesa la pared de la caja.
+- [`fotos/02_caja_cerrada.jpeg`](fotos/02_caja_cerrada.jpeg): la caja cerrada con su tapa, el
+  pulsador afuera y el cable de alimentación.
+- [`fotos/03_ascensor.jpeg`](fotos/03_ascensor.jpeg): cómo se grabó el ascensor. La caja negra va
+  dentro de una caja de cartón, apoyada en el piso del ascensor, junto a la power bank que la
+  alimenta.
 
 ## Cómo hay que grabar (lo que el programa supone)
 
