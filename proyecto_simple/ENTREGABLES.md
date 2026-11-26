@@ -24,6 +24,7 @@ Material de apoyo:
 | Resultados del avance (resumen para el docente) | `proyecto_simple/RESULTADOS_AVANCE.md` |
 | Figuras y reportes de las sesiones reales | `proyecto_simple/resultados/` |
 | Componentes, cómo se verificaron y conexiones | `proyecto_simple/COMPONENTES.md` |
+| Prueba del hardware (I2C, WHO_AM_I, ID del BMP280, microSD; 18/11) | `proyecto_simple/evidencias/prueba_i2c_sd_2026-11-18.jpeg` |
 | Guía de estudio para los integrantes | `proyecto_simple/GUIA_ESTUDIO.md` |
 | Representación numérica (tipos de dato en cada etapa) | `proyecto_simple/representacion_numerica.md` |
 
@@ -39,7 +40,7 @@ el error cuantificado.
 
 | Nivel | Qué lo demuestra |
 |---|---|
-| 1 | Fotos (`proyecto_simple/fotos/01_montaje_protoboard.jpeg`, `02_caja_cerrada.jpeg`, `03_ascensor.jpeg`), `proyecto_simple/COMPONENTES.md` y la bitácora (`proyecto_simple/bitacora.md`) |
+| 1 | Fotos (`proyecto_simple/fotos/01_montaje_protoboard.jpeg`, `02_caja_cerrada.jpeg`, `03_ascensor.jpeg`), `proyecto_simple/COMPONENTES.md` (con la prueba del hardware `proyecto_simple/evidencias/prueba_i2c_sd_2026-11-18.jpeg`) y la bitácora (`proyecto_simple/bitacora.md`) |
 | 2 | Firmware (`proyecto_simple/firmware/registrador_v01/registrador_v01.ino`), datos crudos (`proyecto_simple/datos/*/`) y `verificar`: `proyecto_simple/resultados/*_verificar.txt` y las figuras `*_senales.png` (en especial `reposo_90min_2026-11-21_1915-2049_senales.png`: 95 min, 0 muestras perdidas, 200,000 Hz) |
 | 3 | Reposo (`resultados/reposo_90min_2026-11-21_1915-2049_reposo.png` y `sesion_002_reposo.png`), deriva (`reposo_90min_2026-11-21_1915-2049_deriva.png`), seis caras (`caras_2026-11-24_caras.png`, `caras_2026-11-24v1_caras.png`, `calibracion.json`) y convergencia (`metodos_convergencia.png`) |
 | **4** | `proyecto_simple/datos/pisos.csv` (alturas con flexómetro) + `resultados/ascensor_2026-11-26_ascensor.png` + la tabla de errores por desnivel (`resultados/ascensor_2026-11-26_ascensor.txt` y `RESULTADOS_AVANCE.md`, sección 5.2) |

@@ -29,6 +29,18 @@ cómo se verificó cada uno y conexiones: [`COMPONENTES.md`](COMPONENTES.md).
 - [`fotos/03_ascensor.jpeg`](fotos/03_ascensor.jpeg): montaje del ascensor (sección 2.5). La caja
   negra va dentro de una caja de cartón, en el piso del ascensor, junto a la power bank.
 
+### 2.0 Pruebas del hardware (17 y 18/11)
+
+- **17/11, ESP32:** al cargar el primer programa, `esptool` mostró "Chip type: ESP32-D0WDQ6
+  (revision v1.0)", con Wi-Fi, BT, Dual Core, 240 MHz y cristal de 40 MHz. La captura no se guardó.
+- **18/11, GY-91 y microSD** (monitor serie, [`evidencias/prueba_i2c_sd_2026-11-18.jpeg`](evidencias/prueba_i2c_sd_2026-11-18.jpeg)):
+  - en el bus I2C responden 0x68 y 0x76; en 0x77 no hay nada (devuelve 0xFFFFFFFF);
+  - WHO_AM_I en 0x68 = **0x70** → MPU-6500 (sin magnetómetro);
+  - ID del barómetro en 0x76 = **0x58** → BMP280;
+  - microSD: tarjeta de **29 825 MB** detectada y archivo `prueba.txt` escrito.
+
+  Los dos módulos responden alimentados desde el pin 3V3 del ESP32 (GY-91 VIN y microSD 3V3).
+
 ### 2.1 `sesion_002`: reposo corto de prueba
 
 | Campo | Valor |
@@ -401,6 +413,7 @@ rojo), `resultados/ascensor_2026-11-26_ascensor_error.png`,
 | 26/11 | Parada asignada al piso equivocado | Con el "piso más cercano", la última parada del ascensor (piso 3, medida a 11,4 m) quedaba en el piso 4 | `paradas.csv` en la carpeta de la sesión, con el piso de cada parada. Si existe, se usa como referencia |
 | 26/11 | Pulso de cierre después de que el ascensor arranca | En 3 recorridos (2, 3, 11) se pulsó 0,3–0,5 s tarde; la integración perdía la primera parte de la aceleración (hasta 0,38 m/s) | Se adelantaron esos cierres en `eventos_corregidos.csv` (inicio de la aceleración menos ~1 s). Se comprobó con los 6 recorridos de pulsos 100 % originales que la corrección no sesga el error (sección 2.5). Para otra vez: pulsar antes de que se cierre la puerta |
 | 26/11 | Altura PB→1 dudosa y sin poder volver a medir | Barómetro y acelerómetro dan PB→1 de ~5,3–5,5 m contra 4,90 m de la cinta; los tramos 1→3 y 3→5 sí coinciden | Evaluar por desnivel de cada recorrido, con la validación principal en los recorridos que no pasan por PB; los que tocan PB se muestran aparte, como hallazgo |
+| 26/11 | El micro-USB del ESP32 ya no pasa datos | Después de la reparación del conector micro-USB, Windows no detecta ningún puerto COM: el conector solo da alimentación. El 26/11 no se pudo leer el chip con `esptool` (`chip-id`) para guardar la evidencia del modelo | El firmware ya cargado sigue grabando con normalidad (sesión del ascensor del 26/11), así que los experimentos no se afectan. El modelo del chip queda con lo que mostró `esptool` el 17/11 (sección 2.0). **Consecuencia:** para volver a programar el ESP32 haría falta un adaptador USB-serial conectado a TXD/RXD |
 | 21/11 (reposo de 90 min; se vio al analizarlo el 23/11) | Calentamiento inicial del chip | La temperatura del BMP280 sube ~1,1 °C en los primeros ~2 min y luego baja hasta estabilizarse hacia el minuto 18–20. En ese tramo el sesgo de gx cambia más | Se midió con la deriva por bloques de `reposo`. Se mide el sesgo en el reposo inicial de cada sesión. Para el metro se decidirá si se enciende el dispositivo ~20 min antes (sección 7) |
 
 ## 4. Decisiones y por qué

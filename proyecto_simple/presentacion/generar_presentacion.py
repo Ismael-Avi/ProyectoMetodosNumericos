@@ -55,7 +55,7 @@ def diagrama_conexiones(salida):
     # Cajas: el ESP32 en el centro; las conexiones son lineas horizontales con su pin encima
     caja(3.9, 0.7, 2.2, 5.3, "ESP32", "ESP-WROOM-32\n(ESP32-D0WDQ6)\nLED: G2", "#14213D")
     caja(0.1, 3.3, 2.2, 2.7, "GY-91", "MPU-6500 (0x68)\nBMP280 (0x76)", "#2A8C82")
-    caja(7.7, 3.3, 2.2, 2.7, "microSD", "módulo SPI\nFAT32", "#2A8C82")
+    caja(7.7, 3.3, 2.2, 2.7, "microSD", "mini módulo SPI\n32 GB, FAT32", "#2A8C82")
     caja(0.1, 0.7, 2.2, 1.7, "Pulsador", "normalmente abierto", "#6B7280")
     caja(7.7, 0.7, 2.2, 1.7, "Power bank", "USB 5 V", "#6B7280")
 
@@ -65,17 +65,18 @@ def diagrama_conexiones(salida):
 
     cable(2.3, 3.9, 5.2, "SDA → G21")
     cable(2.3, 3.9, 4.55, "SCL → G22")
-    cable(2.3, 3.9, 3.9, "VIN → 3V3*")
-    cable(6.1, 7.7, 5.35, "CS → G5")
-    cable(6.1, 7.7, 4.85, "SCK → G18")
-    cable(6.1, 7.7, 4.35, "MOSI → G23")
-    cable(6.1, 7.7, 3.85, "MISO → G19")
+    cable(2.3, 3.9, 3.9, "VIN → 3V3")
+    cable(6.1, 7.7, 5.45, "CS → G5")
+    cable(6.1, 7.7, 5.0, "CLK → G18")
+    cable(6.1, 7.7, 4.55, "MOSI → G23")
+    cable(6.1, 7.7, 4.1, "MISO → G19")
+    cable(6.1, 7.7, 3.65, "3V3 → 3V3")
     cable(2.3, 3.9, 1.85, "G4 (pull-up)")
     cable(2.3, 3.9, 1.2, "GND")
     cable(6.1, 7.7, 1.85, "V5")
     cable(6.1, 7.7, 1.2, "GND")
-    ax.text(0.1, 0.0, "* Alimentación de los módulos (3V3 / GND): por confirmar en el montaje. "
-            "Pines de datos: firmware registrador_v01.", fontsize=7.5, color="#6B7280")
+    ax.text(0.1, 0.0, "Pines de datos: firmware registrador_v01. Alimentación: comprobada en el montaje "
+            "(prueba del 18/11).", fontsize=7.5, color="#6B7280")
     fig.tight_layout()
     fig.savefig(salida, dpi=200)
     plt.close(fig)
@@ -363,7 +364,7 @@ def main():
               ("71,6 min", "es cuando se habría desbordado t_us con 32 bits; con 64 bits no hay límite"),
               ("~1 min", "sin correcciones, la deriva ya deja errores de decenas de metros: es el límite real"),
               ("7 km → 22 m", "metro de 22 km (estimación): sin ZUPT contra ZUPT en cada estación"),
-              ("26–39 h", "duraría la power bank de 5000 mAh (consumo estimado, no medido); la microSD de 32 GB, ~830 h")]
+              ("26–39 h", "duraría la power bank de 5000 mAh (consumo estimado, no medido); la microSD de 32 GB, ~800 h")]
     for i, (n, d) in enumerate(celdas):
         x = 0.6 + (i % 3) * 4.15
         y = 1.75 + (i // 3) * 2.6
@@ -373,7 +374,7 @@ def main():
         "(guia/estimar_error_metro.py): sin ZUPT, 7,3 km de error al final; con ZUPT, ~22 m, dominado "
         "por el error de escala (0,094 %), que se corrige con la distancia conocida entre estaciones. "
         "En un registro largo se acaba primero la batería (26–39 h, con 80–120 mA estimados) y mucho "
-        "después la tarjeta (~830 h). "
+        "después la tarjeta (~800 h). "
         "Detalle en GUIA_ESTUDIO.md, secciones d y e.")
 
     # 12. Plan

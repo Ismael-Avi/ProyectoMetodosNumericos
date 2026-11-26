@@ -366,11 +366,11 @@ En la sesión de 95 min (5694,3 s) [V90]:
 - `baro.csv`: 4 416 693 bytes → **776 B/s** (~31 bytes por línea, 25 líneas/s).
 - Total: **10 666 B/s ≈ 38,4 MB por hora**. 90 min ocupan ~58 MB.
 
-Nuestra tarjeta es de **32 GB** (`COMPONENTES.md`):
+Nuestra tarjeta es de 32 GB; la prueba del 18/11 detectó **29 825 MB útiles**
+(`evidencias/prueba_i2c_sd_2026-11-18.jpeg`):
 
 - por cada 1 GB: 10⁹ / 10 666 ≈ 93 800 s ≈ **26 h**;
-- 32 GB: 32·10⁹ / 10 666 ≈ 3,0 millones de s ≈ **830 h ≈ 35 días**. Es la capacidad nominal; al
-  formatear se pierde un poco, pero no cambia el orden de magnitud.
+- 29 825 MB ≈ 3·10¹⁰ bytes: 3·10¹⁰ / 10 666 ≈ 2,8 millones de s ≈ **~800 h ≈ 33 días**.
 
 En FAT32 un archivo no puede pasar de 4 GiB: `imu.csv` llegaría ahí en 4 294 967 295 / 9890 ≈
 434 000 s ≈ **121 h (5 días)**. Esto pasa antes de llenar la tarjeta, pero igual muy lejos de 90 min.
@@ -392,10 +392,10 @@ una medición). Cuenta:
 | Lo que ya grabamos | 95 min = 1,6 h, a 80–120 mA → 127–190 mAh | **4–6 %** de la carga útil: coincide con que no hubo cortes |
 | Power bank | 3150 mAh a 80–120 mA | **26 a 39 h** |
 | Archivo de 4 GiB (FAT32) | arriba | ~121 h |
-| Tarjeta de 32 GB llena | arriba | ~830 h |
+| Tarjeta llena (29 825 MB) | arriba | ~800 h |
 
 **Lo primero que se acaba es la batería:** a las 26–39 h, mucho antes que el límite de archivo
-(~121 h) y unas 20 a 30 veces antes de llenar la tarjeta (~830 h). Para 90 min sobra en todos los
+(~121 h) y unas 20 a 30 veces antes de llenar la tarjeta (~800 h). Para 90 min sobra en todos los
 casos: la batería alcanzaría para unos 17 a 26 registros de 90 min. Como el consumo es una
 estimación, vale la pena medirlo (por ejemplo, con un medidor USB) antes de pasar a las pilas AA.
 
@@ -412,7 +412,7 @@ estimación, vale la pena medirlo (por ejemplo, con un medidor USB) antes de pas
 | Deriva de los sensores | giroscopio −0,047 (°/s)/h → 191° de rumbo en 90 min; presión +59,5 Pa/h → 7 m/h de altura falsa; acelerómetro +0,014 m/s² en 95 min [R90] | **Sí, para navegar.** El registro dura 90 min sin problema, pero integrar sin correcciones deja de servir en ~1 min |
 
 **Conclusión:** como registrador, el dispositivo ya cumple los 90 min (probado). En un registro muy
-largo, lo primero que se acabaría es la batería (~26–39 h), mucho antes que la memoria (~830 h).
+largo, lo primero que se acabaría es la batería (~26–39 h), mucho antes que la memoria (~800 h).
 Pero lo que de verdad limita es la **deriva de los sensores** al navegar: sin ZUPT ni barómetro, el
 error se vuelve inútil en segundos o minutos.
 

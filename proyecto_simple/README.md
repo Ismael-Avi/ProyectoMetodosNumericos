@@ -21,6 +21,7 @@ Rutas relativas a `proyecto_simple/`:
 | Resultados | [`resultados/`](resultados/): figuras y reportes de las sesiones reales. Los de sesiones simuladas están aparte, en [`resultados/simulados/`](resultados/simulados/) |
 | Fotos del montaje | [`fotos/`](fotos/) (ver la sección [Fotos](#fotos)) |
 | Componentes | [`COMPONENTES.md`](COMPONENTES.md): modelo, cómo se verificó, configuración y conexiones |
+| Evidencia del hardware | [`evidencias/prueba_i2c_sd_2026-11-18.jpeg`](evidencias/prueba_i2c_sd_2026-11-18.jpeg): monitor serie del 18/11 (sensores en 0x68 y 0x76, WHO_AM_I 0x70, ID 0x58, microSD de 29 825 MB) |
 | Guía de estudio | [`GUIA_ESTUDIO.md`](GUIA_ESTUDIO.md): para que los integrantes entiendan cada figura, el error y los límites del sistema |
 
 ## Instalar
@@ -94,6 +95,7 @@ bitacora.csv             una fila por cada comando ejecutado
 bitacora.md              bitácora escrita: experimentos, problemas, decisiones, uso de IA
 RESULTADOS_AVANCE.md     resumen de resultados del avance, para el docente
 fotos/                   fotos del montaje
+evidencias/              captura de la prueba del hardware (18/11)
 presentacion/            presentación (presentacion.pptx), el script que la genera y el diagrama de conexiones
 guia/                    script de la estimación del error en el metro (para GUIA_ESTUDIO.md) y su figura
 ENTREGABLES.md           ruta de cada entregable y qué demuestra cada etapa
