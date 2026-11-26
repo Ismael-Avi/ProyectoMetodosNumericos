@@ -102,7 +102,7 @@ solo da alimentación, no datos (ver abajo).
   sección d).
 - **Evidencia:** 95 min seguidos sin cortes. Cuando la power bank estaba descargada, se apagaba y la
   sesión quedaba partida en dos carpetas (bitácora, sección 3).
-- **Plan:** 4 pilas AA (6 V) con interruptor, al pin V5 (`../CONTEXTO_PROYECTO.md`).
+- **Plan:** 4 pilas AA (6 V) con interruptor, al pin V5 (bitácora, sección 7).
 
 ### Botón
 

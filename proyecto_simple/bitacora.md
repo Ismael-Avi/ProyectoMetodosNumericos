@@ -1,4 +1,6 @@
-# Bitácora del proyecto: navegación inercial sin GPS
+# Bitácora del proyecto: navegación inercial en el Metro de Quito
+
+Avance del primer parcial: reposo, seis caras y ascensor.
 
 Métodos Numéricos, EPN. Este archivo es la bitácora escrita, para leer. `bitacora.csv` es el
 registro automático que deja `navegacion.py` cada vez que se corre un comando, y se conserva aparte.
@@ -467,7 +469,7 @@ sin cambios al repo):
 
 - Firmware en C++ del ESP32 (`firmware/registrador_v01/registrador_v01.ino`).
 - Procesamiento en Python (`navegacion.py`).
-- Planificación: el documento de contexto del proyecto (`../CONTEXTO_PROYECTO.md`), el formato de
+- Planificación: el documento de contexto del proyecto ([`CONTEXTO_PROYECTO.md`](https://github.com/Ismael-Avi/ProyectoMetodosNumericos/blob/metro-pendiente/CONTEXTO_PROYECTO.md), en la rama `metro-pendiente`), el formato de
   archivos y el orden de las etapas.
 - Esta bitácora, `datos/LEEME.md`, `RESULTADOS_AVANCE.md`, `ENTREGABLES.md`, `COMPONENTES.md`,
   `GUIA_ESTUDIO.md` y la presentación, a partir de los archivos y de la salida de `navegacion.py`.
@@ -487,14 +489,14 @@ sin cambios al repo):
 
 **Errores de la IA que comprobamos:**
 
-1. **El chip no era el que suponía el plan** (plan del 14/11; detectado a más tardar el 21/11). El plan inicial hecho con IA (`CONTEXTO_PROYECTO.md`,
+1. **El chip no era el que suponía el plan** (plan del 14/11; detectado a más tardar el 21/11). El plan inicial hecho con IA ([`CONTEXTO_PROYECTO.md`](https://github.com/Ismael-Avi/ProyectoMetodosNumericos/blob/metro-pendiente/CONTEXTO_PROYECTO.md),
    sección 2 y el `meta.json` de ejemplo con `"chip_whoami": "0x71"`) suponía que el GY-91 traía un
    MPU-9250 con magnetómetro AK8963 (WHO_AM_I = 0x71). Leímos el registro WHO_AM_I y dio **0x70**:
    es un MPU-6500, **sin magnetómetro**. Así que el rumbo solo puede salir del giroscopio, y su error
    crece con el tiempo. Las cinco sesiones reales tienen `"chip_whoami": "0x70"` en `meta.json`
    (la primera, `sesion_002`, del 21/11).
 2. **Carpetas con fecha sin reloj** (14/11). El mismo plan proponía nombrar cada sesión
-   `sesion_YYYYMMDD_HHMMSS` (`CONTEXTO_PROYECTO.md`, sección 3). El ESP32 no tiene reloj de tiempo
+   `sesion_YYYYMMDD_HHMMSS` ([`CONTEXTO_PROYECTO.md`](https://github.com/Ismael-Avi/ProyectoMetodosNumericos/blob/metro-pendiente/CONTEXTO_PROYECTO.md), sección 3). El ESP32 no tiene reloj de tiempo
    real, así que no sabe la fecha. Se cambió a carpetas numeradas `sesion_NNN` en el commit
    `094b716` ("Formato: carpetas sesion_NNN..."), y la fecha se anota en la bitácora. Por lo mismo,
    los archivos de la microSD tienen fecha 01/01/1980.

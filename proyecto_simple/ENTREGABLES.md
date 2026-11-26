@@ -1,6 +1,7 @@
 # Entregables del primer parcial
 
-Navegación inercial sin GPS. Métodos Numéricos, EPN.
+**Navegación inercial en el Metro de Quito**  
+Avance del primer parcial: reposo, seis caras y ascensor. Métodos Numéricos, EPN.
 Alcance del avance: **hasta el ascensor, solo con datos reales.**
 
 Todas las rutas son relativas a la raíz del repositorio.

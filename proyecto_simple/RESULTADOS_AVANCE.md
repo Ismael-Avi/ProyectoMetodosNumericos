@@ -1,6 +1,7 @@
 # Resultados del avance: caracterización del dispositivo
 
-Navegación inercial sin GPS. Métodos Numéricos, EPN.
+**Navegación inercial en el Metro de Quito**  
+Avance del primer parcial: reposo, seis caras y ascensor. Métodos Numéricos, EPN.
 
 **Alcance del avance:** reposo, calibración de seis caras y ascensor (sección 5). El metro va en el
 segundo parcial.

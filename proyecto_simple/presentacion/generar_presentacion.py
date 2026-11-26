@@ -168,8 +168,8 @@ def main():
     # 1. Portada
     s = prs.slides.add_slide(blanco)
     fondo(s, NOCHE)
-    texto(s, 0.8, 1.6, 7.2, 1.8, "Navegación inercial sin GPS", tam=44, negrita=True, color=BLANCO, fuente=TITULO_FUENTE)
-    texto(s, 0.8, 3.3, 7.2, 0.9, "Primer parcial: del prototipo al ascensor, con datos reales", tam=20, color=AMBAR)
+    texto(s, 0.8, 1.2, 7.4, 2.4, "Navegación inercial en el Metro de Quito", tam=40, negrita=True, color=BLANCO, fuente=TITULO_FUENTE)
+    texto(s, 0.8, 2.85, 7.4, 0.9, "Avance del primer parcial: reposo, seis caras y ascensor", tam=20, color=AMBAR)
     texto(s, 0.8, 4.6, 7.2, 1.4, ["Cesar Avila · Edison Ogonaga · Sebastian Reyes",
                                   "Métodos Numéricos, EPN · Noviembre de 2026"], tam=16, color=BLANCO)
     imagen(s, os.path.join(FOTOS, "02_caja_cerrada.jpeg"), 8.6, 0.6, 4.2, 6.3)

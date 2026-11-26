@@ -67,6 +67,12 @@ sabe la fecha. La fecha y la hora reales se anotan en `../bitacora.md`.
 Cada sesión es una carpeta con cuatro archivos. Todos los valores son **crudos**: el firmware no
 convierte nada. La conversión a unidades físicas la hace `navegacion.py` (`leer_sesion` y `bmp280`).
 
+Este es el "formato v0" que menciona un comentario del firmware ("formato v0 de
+CONTEXTO_PROYECTO.md"). Ese documento de planificación ya no está en la rama principal
+([`CONTEXTO_PROYECTO.md` en la rama `metro-pendiente`](https://github.com/Ismael-Avi/ProyectoMetodosNumericos/blob/metro-pendiente/CONTEXTO_PROYECTO.md)); el formato que vale es el
+que se describe aquí. El comentario se dejó tal cual para no cambiar el firmware que se cargó en el
+dispositivo.
+
 ### Unidades crudas de cada columna
 
 Ningún valor de `imu.csv`, `baro.csv` ni `eventos.csv` está en unidades físicas. Cada columna está
