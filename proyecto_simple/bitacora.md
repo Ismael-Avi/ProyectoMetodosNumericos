@@ -4,7 +4,7 @@ Métodos Numéricos, EPN. Este archivo es la bitácora escrita, para leer. `bita
 registro automático que deja `navegacion.py` cada vez que se corre un comando, y se conserva aparte.
 
 Todos los números de este documento salen de los archivos de `datos/` o de correr `navegacion.py`
-(corridas del 24/11/2026; las del ascensor, del 26/11/2026). Lo que falta está marcado con **TODO**.
+(corridas del 24/11/2026; las del ascensor, del 26/11/2026).
 Las fechas son de 2026. Cuando no se sabe el día en que pasó algo, se pone el día en que se anotó
 (primer commit que lo menciona).
 
@@ -264,8 +264,8 @@ python navegacion.py caras     datos/caras_2026-11-24      (para dejar la calibr
 
 | Campo | Valor |
 |---|---|
-| Fecha y hora | 26/11/2026 (TODO: hora) |
-| Lugar | edificio de PB + 5 pisos, con acceso solo a PB, 1, 3 y 5 (TODO: nombre del edificio) |
+| Fecha y hora | 26/11/2026, aprox. 16:00 |
+| Lugar | edificio residencial donde vive Cesar (sin dirección: el repositorio es público). PB + 5 pisos, con acceso solo a PB, 1, 3 y 5 |
 | Superficie | piso del ascensor |
 | Montaje | caja negra dentro de una caja de cartón, apoyada en el piso del ascensor junto a la power bank ([foto 03](fotos/03_ascensor.jpeg)) |
 | Orientación | inclinación de 7,0° respecto a la vertical (medida con `ascensor`, calibrado) |
@@ -401,7 +401,7 @@ rojo), `resultados/ascensor_2026-11-26_ascensor_error.png`,
 | 26/11 | Parada asignada al piso equivocado | Con el "piso más cercano", la última parada del ascensor (piso 3, medida a 11,4 m) quedaba en el piso 4 | `paradas.csv` en la carpeta de la sesión, con el piso de cada parada. Si existe, se usa como referencia |
 | 26/11 | Pulso de cierre después de que el ascensor arranca | En 3 recorridos (2, 3, 11) se pulsó 0,3–0,5 s tarde; la integración perdía la primera parte de la aceleración (hasta 0,38 m/s) | Se adelantaron esos cierres en `eventos_corregidos.csv` (inicio de la aceleración menos ~1 s). Se comprobó con los 6 recorridos de pulsos 100 % originales que la corrección no sesga el error (sección 2.5). Para otra vez: pulsar antes de que se cierre la puerta |
 | 26/11 | Altura PB→1 dudosa y sin poder volver a medir | Barómetro y acelerómetro dan PB→1 de ~5,3–5,5 m contra 4,90 m de la cinta; los tramos 1→3 y 3→5 sí coinciden | Evaluar por desnivel de cada recorrido, con la validación principal en los recorridos que no pasan por PB; los que tocan PB se muestran aparte, como hallazgo |
-| 21/11 (reposo de 90 min; se vio al analizarlo el 23/11) | Calentamiento inicial del chip | La temperatura del BMP280 sube ~1,1 °C en los primeros ~2 min y luego baja hasta estabilizarse hacia el minuto 18–20. En ese tramo el sesgo de gx cambia más | Se midió con la deriva por bloques de `reposo`. Se mide el sesgo en el reposo inicial de cada sesión. TODO: decidir si se enciende el dispositivo ~20 min antes de los experimentos |
+| 21/11 (reposo de 90 min; se vio al analizarlo el 23/11) | Calentamiento inicial del chip | La temperatura del BMP280 sube ~1,1 °C en los primeros ~2 min y luego baja hasta estabilizarse hacia el minuto 18–20. En ese tramo el sesgo de gx cambia más | Se midió con la deriva por bloques de `reposo`. Se mide el sesgo en el reposo inicial de cada sesión. Para el metro se decidirá si se enciende el dispositivo ~20 min antes (sección 7) |
 
 ## 4. Decisiones y por qué
 
@@ -525,9 +525,8 @@ se probó en el dispositivo**. El que se usa es `registrador_v01.ino`, el único
   ni a medir PB→1: se evalúa por desnivel.
 - [x] **Fotos del montaje** en `fotos/` (26/11; enlazadas arriba, en la sección 2).
 - [x] **Presentación**: `presentacion/presentacion.pptx` (26/11).
-- [ ] Llenar en `COMPONENTES.md` dónde se consiguió cada componente y su costo, y los TODO de
-  evidencia (salida de `esptool`, ID del BMP280, capacidad de la tarjeta y de la power bank).
-- [ ] Completar los TODO de este documento y de `datos/LEEME.md`.
+- [x] `COMPONENTES.md` completo (26/11): dónde se consiguió cada componente, costo (total $43,70),
+  tarjeta de 32 GB, power bank de 5000 mAh y consumo estimado (80–120 mA, no medido).
 
 ## 7. Plan para el segundo parcial
 
@@ -545,6 +544,10 @@ Escrito el 26/11, después del ascensor.
   viaje completo; con ZUPT en cada estación, ~20 m en 22 km, dominado por el error de escala. Por
   eso se usará la distancia conocida entre estaciones para ajustar la escala, y se volverá a medir
   el sesgo del giroscopio en cada parada para el rumbo.
+- **Calentamiento:** decidir si se enciende el dispositivo ~20 min antes de cada viaje, para que el
+  sesgo del giroscopio ya no cambie tanto (sección 3).
+- **Medir el consumo** con un medidor USB antes de pasar a las pilas AA (hoy es una estimación de
+  80–120 mA; `GUIA_ESTUDIO.md`, sección d).
 - **Experimento propio** que ponga a prueba un límite del sistema. Pendiente de definir; ideas
   anotadas: un registro de 90 min con las pilas AA (energía), o medir cuánto empeora el resultado
   si se quita el ZUPT de algunas paradas.

@@ -366,13 +366,38 @@ En la sesión de 95 min (5694,3 s) [V90]:
 - `baro.csv`: 4 416 693 bytes → **776 B/s** (~31 bytes por línea, 25 líneas/s).
 - Total: **10 666 B/s ≈ 38,4 MB por hora**. 90 min ocupan ~58 MB.
 
-| Tarjeta | Horas de registro |
-|---|---|
-| por cada 1 GB libre | 26 h |
-| **TODO:** capacidad real de nuestra tarjeta | capacidad en GB × 26 h |
+Nuestra tarjeta es de **32 GB** (`COMPONENTES.md`):
+
+- por cada 1 GB: 10⁹ / 10 666 ≈ 93 800 s ≈ **26 h**;
+- 32 GB: 32·10⁹ / 10 666 ≈ 3,0 millones de s ≈ **830 h ≈ 35 días**. Es la capacidad nominal; al
+  formatear se pierde un poco, pero no cambia el orden de magnitud.
 
 En FAT32 un archivo no puede pasar de 4 GiB: `imu.csv` llegaría ahí en 4 294 967 295 / 9890 ≈
-434 000 s ≈ **5 días**. Tampoco limita.
+434 000 s ≈ **121 h (5 días)**. Esto pasa antes de llenar la tarjeta, pero igual muy lejos de 90 min.
+
+### Energía (power bank), con el consumo estimado
+
+**El consumo no se midió.** Se estima en 80–120 mA, según la guía de armado (es una estimación, no
+una medición). Cuenta:
+
+1. Energía guardada en la power bank: sus 5000 mAh están a la tensión de la batería, 3,7 V →
+   5 Ah · 3,7 V = **18,5 Wh**.
+2. La power bank sube la tensión a 5 V con ~85 % de eficiencia: 18,5 · 0,85 ≈ **15,7 Wh** útiles.
+3. A 5 V eso son 15,7 Wh / 5 V ≈ **3150 mAh** disponibles para el dispositivo. Ojo: no son los
+   5000 mAh de la etiqueta.
+4. Duración: 3150 mAh / 120 mA ≈ **26 h**; 3150 mAh / 80 mA ≈ **39 h**.
+
+| Comparación | Cuenta | Resultado |
+|---|---|---|
+| Lo que ya grabamos | 95 min = 1,6 h, a 80–120 mA → 127–190 mAh | **4–6 %** de la carga útil: coincide con que no hubo cortes |
+| Power bank | 3150 mAh a 80–120 mA | **26 a 39 h** |
+| Archivo de 4 GiB (FAT32) | arriba | ~121 h |
+| Tarjeta de 32 GB llena | arriba | ~830 h |
+
+**Lo primero que se acaba es la batería:** a las 26–39 h, mucho antes que el límite de archivo
+(~121 h) y unas 20 a 30 veces antes de llenar la tarjeta (~830 h). Para 90 min sobra en todos los
+casos: la batería alcanzaría para unos 17 a 26 registros de 90 min. Como el consumo es una
+estimación, vale la pena medirlo (por ejemplo, con un medidor USB) antes de pasar a las pilas AA.
 
 ### ¿Qué limita primero un registro de 90 min?
 
@@ -382,13 +407,14 @@ En FAT32 un archivo no puede pasar de 4 GiB: `imu.csv` llegaría ahí en 4 294 9
 | Marcas de tiempo (`t_us`, 64 bits) | se desborda a los 2⁶³ µs ≈ 292 000 años. Con 32 bits se habría desbordado a los 2³² µs = **71,6 min** | No. Por eso el firmware usa `int64_t` [FW] |
 | Contador `seq` (32 bits sin signo) | 2³² muestras / 200 Hz = 21,5 millones de s ≈ 248 días | No |
 | Cola del firmware | 2000 muestras = 10 s de margen si la tarjeta se atrasa; 0 perdidas en 95 min [V90] | No |
-| Energía | la power bank aguantó 95 min sin cortes; no medimos la corriente ni la capacidad (**TODO**) | No en lo que probamos. Es lo único que no está calculado; con las pilas AA hay que comprobarlo |
+| Energía | power bank de 5000 mAh: ~26–39 h con el consumo estimado (80–120 mA, no medido); 95 min usaron el 4–6 % | No. Es lo primero que se acaba en un registro largo, pero a las 26–39 h |
 | Temperatura | +1,1 °C al encender; se estabiliza en ~20 min [R90] | No detiene el registro, pero cambia el sesgo en los primeros 20 min |
 | Deriva de los sensores | giroscopio −0,047 (°/s)/h → 191° de rumbo en 90 min; presión +59,5 Pa/h → 7 m/h de altura falsa; acelerómetro +0,014 m/s² en 95 min [R90] | **Sí, para navegar.** El registro dura 90 min sin problema, pero integrar sin correcciones deja de servir en ~1 min |
 
-**Conclusión:** como registrador, el dispositivo ya cumple los 90 min (probado). Lo que limita es la
-**deriva de los sensores** al navegar: sin ZUPT ni barómetro, el error se vuelve inútil en segundos
-o minutos. El único límite del registro sin calcular es la energía.
+**Conclusión:** como registrador, el dispositivo ya cumple los 90 min (probado). En un registro muy
+largo, lo primero que se acabaría es la batería (~26–39 h), mucho antes que la memoria (~830 h).
+Pero lo que de verdad limita es la **deriva de los sensores** al navegar: sin ZUPT ni barómetro, el
+error se vuelve inútil en segundos o minutos.
 
 ---
 

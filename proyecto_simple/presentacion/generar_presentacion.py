@@ -243,7 +243,7 @@ def main():
     titulo(s, "Calibración de seis caras", "sesgo = (a₊ + a₋)/2   ·   escala = (a₊ − a₋)/(2g)")
     imagen(s, os.path.join(RES, "caras_2026-11-24_caras.png"), 0.4, 1.6, 8.6, 4.4)
     tarjeta(s, 9.4, 1.8, 3.4, 1.6, "18×", "menos variación de |g| en las 8 posiciones de prueba")
-    tarjeta(s, 9.4, 3.6, 3.4, 1.6, "9,770–9,799", "|g| calibrado en m/s² (antes 9,661–10,127)", color_num=VERDE, tam_num=28)
+    tarjeta(s, 9.4, 3.6, 3.4, 1.6, "9,770–9,799", "|g| calibrado en m/s²; sin calibrar: 9,66 a 10,13", color_num=VERDE, tam_num=28)
     texto(s, 0.6, 6.15, 8.4, 0.8, "Rojo: sin calibrar · verde: calibrado · lo que prueba son las columnas «extra».",
           tam=14, color=GRIS)
     s.notes_slide.notes_text_frame.text = (
@@ -363,7 +363,7 @@ def main():
               ("71,6 min", "es cuando se habría desbordado t_us con 32 bits; con 64 bits no hay límite"),
               ("~1 min", "sin correcciones, la deriva ya deja errores de decenas de metros: es el límite real"),
               ("7 km → 22 m", "metro de 22 km (estimación): sin ZUPT contra ZUPT en cada estación"),
-              ("95 min", "con la power bank sin cortes; falta medir la corriente y la capacidad")]
+              ("26–39 h", "duraría la power bank de 5000 mAh (consumo estimado, no medido); la microSD de 32 GB, ~830 h")]
     for i, (n, d) in enumerate(celdas):
         x = 0.6 + (i % 3) * 4.15
         y = 1.75 + (i // 3) * 2.6
@@ -372,6 +372,8 @@ def main():
         "Como registrador cumple 90 min. Lo que limita es la deriva al navegar. Estimación del metro "
         "(guia/estimar_error_metro.py): sin ZUPT, 7,3 km de error al final; con ZUPT, ~22 m, dominado "
         "por el error de escala (0,094 %), que se corrige con la distancia conocida entre estaciones. "
+        "En un registro largo se acaba primero la batería (26–39 h, con 80–120 mA estimados) y mucho "
+        "después la tarjeta (~830 h). "
         "Detalle en GUIA_ESTUDIO.md, secciones d y e.")
 
     # 12. Plan

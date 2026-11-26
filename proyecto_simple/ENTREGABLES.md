@@ -34,17 +34,20 @@ resultados del avance: están en `proyecto_simple/resultados/simulados/` solo co
 
 ## Hasta dónde llegamos
 
-El enunciado del docente no está en el repositorio, así que aquí no se usan sus niveles 1 a 4. La
-tabla sigue las etapas del proyecto (`CONTEXTO_PROYECTO.md`, sección 1).
+**Nivel alcanzado: 4.** Validación en el ascensor frente a las alturas medidas con flexómetro, con
+el error cuantificado.
 
-| Etapa | Estado | Qué lo demuestra |
-|---|---|---|
-| 1. Prototipo y caracterización | **Hecha** | ver la tabla de abajo |
-| 2. Validación en el ascensor | **Hecha** (10 recorridos evaluados) | ver la tabla de abajo |
-| 3. Metro de Quito | Pendiente (segundo parcial) | El comando `metro` existe, pero solo se probó con sesiones simuladas. No hay viajes reales grabados |
-| Experimento propio | Pendiente (segundo parcial) | Todavía no se definió |
+| Nivel | Qué lo demuestra |
+|---|---|
+| 1 | Fotos (`proyecto_simple/fotos/01_montaje_protoboard.jpeg`, `02_caja_cerrada.jpeg`, `03_ascensor.jpeg`), `proyecto_simple/COMPONENTES.md` y la bitácora (`proyecto_simple/bitacora.md`) |
+| 2 | Firmware (`proyecto_simple/firmware/registrador_v01/registrador_v01.ino`), datos crudos (`proyecto_simple/datos/*/`) y `verificar`: `proyecto_simple/resultados/*_verificar.txt` y las figuras `*_senales.png` (en especial `reposo_90min_2026-11-21_1915-2049_senales.png`: 95 min, 0 muestras perdidas, 200,000 Hz) |
+| 3 | Reposo (`resultados/reposo_90min_2026-11-21_1915-2049_reposo.png` y `sesion_002_reposo.png`), deriva (`reposo_90min_2026-11-21_1915-2049_deriva.png`), seis caras (`caras_2026-11-24_caras.png`, `caras_2026-11-24v1_caras.png`, `calibracion.json`) y convergencia (`metodos_convergencia.png`) |
+| **4** | `proyecto_simple/datos/pisos.csv` (alturas con flexómetro) + `resultados/ascensor_2026-11-26_ascensor.png` + la tabla de errores por desnivel (`resultados/ascensor_2026-11-26_ascensor.txt` y `RESULTADOS_AVANCE.md`, sección 5.2) |
 
-**Llegamos hasta la etapa 2 (ascensor), completa y con datos reales.**
+Lo que sigue (segundo parcial) no forma parte de este nivel: el metro (el comando `metro` existe,
+pero solo se probó con sesiones simuladas) y el experimento propio.
+
+Detalle de cada requisito, por etapa del proyecto (`CONTEXTO_PROYECTO.md`, sección 1):
 
 ### Etapa 1: prototipo y caracterización
 

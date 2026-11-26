@@ -105,7 +105,7 @@ Chequeos que se cumplen con los datos reales:
 - **Presión coherente con Quito:** ~731 hPa (732,7; 731,3; 730,3 y 730,8 hPa en las cuatro sesiones). A nivel
   del mar serían ~1013 hPa. Con la atmósfera estándar, 731 hPa corresponde a unos 2650–2680 m.
   Es el orden de la altitud de Quito (~2850 m). La atmósfera estándar no representa el clima real
-  del día ni el del trópico, y no sabemos la altitud exacta del lugar (TODO).
+  del día ni el del trópico, y no conocemos la altitud exacta de cada lugar.
 - **La presión cambia con el clima:** subió 0,80 hPa en 90 min sin mover el dispositivo, unos
   9,7 m de altura falsa. **Por eso se mide la presión de referencia P0 al inicio de cada sesión.**
 - **Sesgo del giroscopio repetible:**
@@ -141,8 +141,8 @@ Chequeos que se cumplen con los datos reales:
 
 ## 5. Ascensor (`ascensor_2026-11-26`, 26/11/2026)
 
-**Qué se hizo:** la caja en el piso del ascensor, alimentada con una power bank por el pin V5. El
-edificio tiene PB y 5 pisos, pero solo hay acceso a PB, 1, 3 y 5. Se hicieron 13 recorridos:
+**Qué se hizo:** el 26/11, aprox. a las 16:00, en un edificio residencial. La caja en el piso del
+ascensor, alimentada con una power bank por el pin V5. El edificio tiene PB y 5 pisos, pero solo hay acceso a PB, 1, 3 y 5. Se hicieron 13 recorridos:
 
 | # | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|

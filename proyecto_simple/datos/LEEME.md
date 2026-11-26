@@ -17,7 +17,7 @@ cercano, sin calibrar).
 | `reposo_90min_2026-11-21_1915-2049/` | 21/11/2026, 19:15 a 20:49 | reposo largo (90 min) | 5694,3 s (94,9 min) | 1 138 860 | 142 358 | 0 / 0 | 200,000 / 200,000 Hz | 25,000 / 25,000 Hz | power bank | sobre una mesa nivelada (casa de Ismael), eje z hacia arriba, protoboard inclinada 9,2° |
 | `caras_2026-11-24v1/` | 24/11/2026, aprox. 18:00 | seis caras, segundo intento (comparación; no es la calibración oficial) | 481,5 s (8,0 min) | 96 306 | 12 039 | 0 / 0 | 200,000 / 200,000 Hz | 25,000 / 25,000 Hz | power bank | sobre una mesa nivelada (casa de Cesar); protoboard fijada dentro de una caja; solo las seis caras, inclinadas 3,0° a 9,0° |
 | `caras_2026-11-24/` | 24/11/2026, aprox. 18:30 | seis caras + 8 posiciones inclinadas (**calibración oficial**) | 746,7 s (12,4 min) | 149 332 | 18 667 | 0 / 0 | 200,000 / 200,000 Hz | 25,000 / 25,000 Hz | power bank | sobre una mesa nivelada (casa de Cesar); protoboard fijada dentro de una caja; seis caras y 8 posiciones inclinadas de 5,2° a 22,3° |
-| `ascensor_2026-11-26/` | 26/11/2026 | ascensor: 13 recorridos entre PB, 1, 3 y 5 (hasta 305 s; 10 evaluados: 1–9 y 11) | 315,0 s (5,3 min) | 63 004 | 7 876 | 0 / 0 | 200,000 / 200,000 Hz | 25,000 / 25,000 Hz | power bank por V5 | caja en el piso del ascensor, inclinada 7,0° (calibrado) |
+| `ascensor_2026-11-26/` | 26/11/2026, aprox. 16:00 | ascensor: 13 recorridos entre PB, 1, 3 y 5 (hasta 305 s; 10 evaluados: 1–9 y 11) | 315,0 s (5,3 min) | 63 004 | 7 876 | 0 / 0 | 200,000 / 200,000 Hz | 25,000 / 25,000 Hz | power bank por V5 | caja en el piso del ascensor, inclinada 7,0° (calibrado) |
 
 Otros datos de `verificar`:
 
@@ -58,7 +58,7 @@ temperatura medias, de `verificar` (corridas del 26/11).
 | `reposo_90min_2026-11-21_1915-2049` | casa de Ismael | mesa nivelada; protoboard inclinada 9,2° | power bank | 731,3 hPa | 25,0 a 26,3 °C | inicio y fin (más un rebote) |
 | `caras_2026-11-24v1` | casa de Cesar | mesa nivelada; protoboard fijada en la caja, seis caras | power bank | 730,3 hPa | 22,4 a 24,7 °C | sin pulsaciones |
 | `caras_2026-11-24` | casa de Cesar | mesa nivelada; protoboard fijada en la caja, seis caras y 8 posiciones inclinadas | power bank | 730,8 hPa | 24,6 a 26,0 °C | sin pulsaciones |
-| `ascensor_2026-11-26` | edificio de PB + 5 pisos | caja en una caja de cartón, en el piso del ascensor (inclinada 7,0°) | power bank por V5 | 729,8 hPa | 23,6 a 24,5 °C | cierre y apertura de puerta (con faltantes y rebotes; ver arriba) |
+| `ascensor_2026-11-26` | edificio residencial donde vive Cesar (PB + 5 pisos), aprox. 16:00 | caja en una caja de cartón, en el piso del ascensor (inclinada 7,0°) | power bank por V5 | 729,8 hPa | 23,6 a 24,5 °C | cierre y apertura de puerta (con faltantes y rebotes; ver arriba) |
 
 Los archivos que vienen de la microSD tienen fecha de modificación 01/01/1980, porque el ESP32 no
 sabe la fecha. La fecha y la hora reales se anotan en `../bitacora.md`.
