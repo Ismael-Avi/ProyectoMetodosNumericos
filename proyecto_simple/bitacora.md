@@ -4,7 +4,7 @@ Métodos Numéricos, EPN. Este archivo es la bitácora escrita, para leer. `bita
 registro automático que deja `navegacion.py` cada vez que se corre un comando, y se conserva aparte.
 
 Todos los números de este documento salen de los archivos de `datos/` o de correr `navegacion.py`
-(corridas del 24/11/2026). Lo que falta está marcado con **TODO**.
+(corridas del 24/11/2026; las del ascensor, del 26/11/2026). Lo que falta está marcado con **TODO**.
 
 ## 1. Integrantes
 
@@ -247,6 +247,100 @@ python navegacion.py caras     datos/caras_2026-11-24      (para dejar la calibr
 `resultados/caras_2026-11-24v1_senales.png`, `resultados/caras_2026-11-24v1_caras.txt` y
 `resultados/caras_2026-11-24v1_verificar.txt`.
 
+### 2.5 `ascensor_2026-11-26`: ascensor
+
+| Campo | Valor |
+|---|---|
+| Fecha y hora | 26/11/2026 (TODO: hora) |
+| Lugar | edificio de PB + 5 pisos, con acceso solo a PB, 1, 3 y 5 (TODO: nombre del edificio) |
+| Superficie | piso del ascensor |
+| Montaje | caja apoyada en el piso del ascensor |
+| Orientación | inclinación de 7,0° respecto a la vertical (medida con `ascensor`, calibrado) |
+| Alimentación | power bank por el pin V5 |
+| Duración | 315,0 s (5,3 min); se usa hasta 305 s |
+| Procedimiento | un pulso de inicio, reposo, y 13 recorridos con un pulso al cerrarse la puerta y otro al abrirse |
+
+**Los 13 recorridos reales** (detectados con el acelerómetro y el barómetro, no con los pulsos):
+
+| # | Recorrido | # | Recorrido | # | Recorrido |
+|---|---|---|---|---|---|
+| 1 | 0→1 | 6 | 1→5 | 11 | 3→5 |
+| 2 | 1→3 | 7 | 5→0 | 12 | 5→3 |
+| 3 | 3→0 | 8 | 0→3 | 13 | 3→1 (cortado, no se usa) |
+| 4 | 0→5 | 9 | 3→1 | | |
+| 5 | 5→1 | 10 | 1→3 | | |
+
+**Alturas de los pisos** (`datos/pisos.csv`, flexómetro, 26/11/2026): PB 0,00; 1: 4,90; 2: 7,42;
+3: 9,90; 4: 12,34; 5: 14,86 m. **Discrepancia en PB→1:** el barómetro y el acelerómetro dicen
+que PB→1 mide ~5,7 m (barómetro 5,73 m en el recorrido 1), mientras los tramos 1→3 y 3→5 coinciden
+con la cinta a ~0,1 m. Se va a volver a medir PB→1; por ahora `pisos.csv` deja 4,90 m (anotado en
+la columna `fuente`).
+
+**Problemas de la sesión y cómo se arreglaron (sin tocar los archivos originales):**
+
+- **El recorrido 13 se cortó al llegar**: se apagó el dispositivo sin reposo final. Se usa la sesión
+  solo hasta 305 s (opción nueva `--hasta 305`).
+- **El primer pulso (0,3 s) fue marca de inicio**, no cierre de puerta. El ascensor arrancó a 7,8 s.
+- **Rebotes:** `eventos.csv` tiene 33 pulsaciones. El filtro de 1 s deja 21, porque hay pulsos
+  dobles a 0,2–0,35 s, que pasan el antirrebote de 200 ms del firmware.
+- **Faltan pulsos** en los recorridos 10, 12 y 13.
+- Con eso no se pueden armar pares cierre/apertura. Se escribió a mano
+  `datos/ascensor_2026-11-26/eventos_corregidos.csv`, con 12 pares (segundos desde la primera muestra
+  del IMU, `t_us = t_us[0] + s·10⁶`): (6,8; 19,2) (30,1; 40,5) (51,9; 67,4) (78,1; 97,9)
+  (108,4; 124,5) (134,9; 150,4) (161,2; 181,7) (192,3; 207,1) (217,8; 229,9) (239,3; 248,0)
+  (262,5; 273,7) (283,1; 295,8). **Los pulsos 6,8; 239,3; 248,0 y 283,1 s son inventados:** salen
+  del arranque y la parada que se ven en el acelerómetro (para los cierres, ~1 s antes del
+  arranque). Los demás son pulsos de `eventos.csv`. Si existe `eventos_corregidos.csv`,
+  `navegacion.py` lo usa en vez de `eventos.csv` y lo dice en el reporte.
+- **El piso más cercano falla:** la última parada (piso 3, medida a 11,4 m por la deriva del
+  barómetro y la discrepancia de PB→1) quedaba asignada al piso 4. Se escribió
+  `datos/ascensor_2026-11-26/paradas.csv` con el piso de cada parada: 0, 1, 3, 0, 5, 1, 5, 0, 3, 1,
+  3, 5, 3 (la primera es el reposo inicial).
+
+**Comandos:**
+
+```
+python navegacion.py verificar datos/ascensor_2026-11-26
+python navegacion.py ascensor  datos/ascensor_2026-11-26 --hasta 305
+```
+
+`verificar` se corrió sobre todo el registro (las pérdidas se miden en todo el registro).
+
+**Resultados principales** (resumen en `RESULTADOS_AVANCE.md`, sección 5):
+
+- Muestras: 63 004 del IMU y 7 876 del barómetro, 0 perdidas. 200,000 Hz al inicio y al final
+  (barómetro 25,000 Hz). Jitter del periodo del IMU: 1,0 µs.
+- Reposo inicial de 0 a 5,8 s (hasta 1 s antes del primer cierre). |g| calibrado 9,7592 m/s².
+  Sesgo vertical que queda tras calibrar: −0,0108 m/s². **Ruido 0,0948 m/s²**, 5 a 7 veces el de la
+  mesa, porque el piso del ascensor vibra.
+- Error RMS de altura en las 13 paradas: 308 m sin corrección (rectángulo y trapecio), 68 m
+  restando el sesgo, 1,43 m (rectángulo) y 1,41 m (trapecio) con ZUPT, 1,00 m con el barómetro solo
+  y **0,99 m con la fusión**.
+- 23 cruces de pisos intermedios por bisección: todos los que había que encontrar.
+- Barómetro y acelerómetro con ZUPT coinciden a 0,32 m o menos en 8 de los 12 desniveles. 1→3 y
+  3→5 coinciden con la cinta. PB→1 no coincide (ver arriba).
+- **Deriva del barómetro ~0,7 m en 5 min:** piso 3, de 10,70 m (40 s) a 11,42 m (296 s); piso 5, de
+  15,77 m (98 s) a 16,59 m (274 s).
+
+**Figuras y reportes:** `resultados/ascensor_2026-11-26_senales.png`,
+`resultados/ascensor_2026-11-26_ascensor.png`, `resultados/ascensor_2026-11-26_ascensor_error.png`,
+`resultados/ascensor_2026-11-26_verificar.txt`, `resultados/ascensor_2026-11-26_ascensor.txt`.
+
+**Observaciones:**
+
+- **Pulsos de cierre tardíos en los recorridos 2, 3 y 11.** El ascensor empezó a acelerar a 29,84,
+  51,38 y 261,98 s, o sea 0,26, 0,52 y 0,52 s antes de los pulsos de cierre (30,1, 51,9 y 262,5 s).
+  La ventana de integración empieza con el ascensor ya en movimiento y pierde 0,17, 0,32 y
+  0,38 m/s. Por eso el acelerómetro con ZUPT se equivoca en esos recorridos (4,05 en vez de 5,00 m;
+  −7,99 en vez de −9,90; 2,75 en vez de 4,96). Integrando desde 3 s antes del pulso, la velocidad
+  al llegar baja a −0,04 a −0,10 m/s, como en los demás recorridos. Se dejaron los pulsos
+  originales. **Aprendizaje:** pulsar antes de que se cierre la puerta, no cuando ya se mueve.
+- Sin ZUPT, la velocidad acumula ~−0,07 m/s en cada recorrido y algo más en las paradas. El error
+  observado restando el sesgo (154 m al final) es mucho mayor que el predicho por el ruido (21 m):
+  el sesgo cambia durante la sesión.
+- El detector de quietud ve como "quieto" solo el 58 % al 92 % de cada parada (vibraciones, gente
+  entrando y saliendo). Sin los pulsos, el ZUPT no habría encontrado bien las paradas.
+
 ## 3. Problemas encontrados y cómo se resolvieron
 
 | Problema | Qué pasaba | Cómo se resolvió |
@@ -257,6 +351,10 @@ python navegacion.py caras     datos/caras_2026-11-24      (para dejar la calibr
 | Deriva de la presión por el clima | En el reposo de 90 min la presión subió 0,80 hPa sin mover el dispositivo. Equivale a 9,65 m de altura falsa | Medir P0 (la presión de referencia) en el reposo inicial de cada sesión, en vez de usar un valor fijo |
 | Calibración simulada con aspecto de real | La única `resultados/calibracion.json` venía de la sesión **simulada** `caras` (ver `bitacora.csv`), y `ascensor` y `metro` la cargaban sin avisar. Con datos reales se habría aplicado un sesgo y una escala inventados | El 23/11/2026 se movió a `resultados/simulados/calibracion_simulada.json`. `navegacion.py` solo carga `resultados/calibracion.json`, que tiene que salir de una sesión real de `caras`; si falta, `ascensor` y `metro` avisan y siguen sin calibrar. Si `caras` procesa una sesión simulada, guarda en `resultados/simulados/`. Desde el 24/11/2026 `resultados/calibracion.json` sale de la sesión real `caras_2026-11-24` |
 | Caras inclinadas o incompletas en la calibración | En el primer intento faltó la cara y− y las caras quedaron inclinadas hasta 17°. En el segundo (`caras_2026-11-24v1`), inclinadas 3° a 9° y sin posiciones para comprobar | Fijar la protoboard dentro de una caja y apoyar la caja en sus caras (desde el segundo intento); dejar las caras lo más verticales posible y agregar posiciones inclinadas para comprobar. El tercer intento (`caras_2026-11-24`) es la calibración oficial |
+| Pulsos faltantes, dobles o de más en el ascensor | En `ascensor_2026-11-26` faltan pulsos en los recorridos 10, 12 y 13, hay rebotes que pasan el filtro del firmware, y el primer pulso fue una marca de inicio. No se pueden armar los pares cierre/apertura | `eventos_corregidos.csv` en la carpeta de la sesión, escrito a mano (4 pulsos sacados del acelerómetro). `navegacion.py` lo usa en vez de `eventos.csv` y lo dice. `eventos.csv` queda tal como salió de la microSD |
+| Recorrido cortado al final | El recorrido 13 del ascensor terminó sin reposo final (se apagó al llegar). Sin reposo final el ZUPT no tiene con qué corregir | Opción `--hasta T` para usar la sesión solo hasta T segundos (305 s en el ascensor) |
+| Parada asignada al piso equivocado | Con el "piso más cercano", la última parada del ascensor (piso 3, medida a 11,4 m) quedaba en el piso 4 | `paradas.csv` en la carpeta de la sesión, con el piso de cada parada. Si existe, se usa como referencia |
+| Pulso de cierre después de que el ascensor arranca | En 3 recorridos se pulsó 0,3–0,5 s tarde; la integración pierde la primera parte de la aceleración (hasta 0,38 m/s) | Se dejó así y se anotó (sección 2.5). Para las próximas grabaciones: pulsar antes de que se cierre la puerta |
 | Calentamiento inicial del chip | La temperatura del BMP280 sube ~1,1 °C en los primeros ~2 min y luego baja hasta estabilizarse hacia el minuto 18–20. En ese tramo el sesgo de gx cambia más | Se midió con la deriva por bloques de `reposo`. Se mide el sesgo en el reposo inicial de cada sesión. TODO: decidir si se enciende el dispositivo ~20 min antes de los experimentos |
 
 ## 4. Decisiones y por qué
@@ -338,9 +436,10 @@ sin cambios al repo):
   oficial: `resultados/calibracion.json`.
 - [ ] **Soldar el pulsador.** La protoboard ya va fijada dentro de una caja (sesión de caras), pero
   el pulsador sigue sin soldar (rebote).
-- [ ] **Ascensor:** edificio de ≥ 5 pisos, ≥ 10 recorridos de subida y bajada con paradas
-  intermedias, botón en cada cierre y apertura de puerta. Medir la altura de cada piso con
-  flexómetro y llenar `datos/pisos.csv`.
+- [x] **Ascensor.** Grabado el 26/11/2026 (`ascensor_2026-11-26`, sección 2.5): 12 recorridos
+  útiles en un edificio de PB + 5 pisos; `datos/pisos.csv` lleno.
+- [ ] **Volver a medir PB→1** (cinta 4,90 m; barómetro y acelerómetro ~5,7 m) y actualizar
+  `datos/pisos.csv`.
 - [ ] **Fotos del montaje** en `fotos/`.
 - [ ] **Presentación** en `presentacion/`. Pendiente: se hará después del ascensor.
 - [ ] Completar los TODO de este documento y de `datos/LEEME.md`.

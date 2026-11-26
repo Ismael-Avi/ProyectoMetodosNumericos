@@ -18,7 +18,9 @@ en unidades SI:
   el rango ±4 g. El "g" de la hoja de datos es el estándar (9,80665), no el de Quito.
 - giroscopio: `crudo / 65.5` → °/s, y luego a rad/s.
 - barómetro: `bmp280()`.
-- eventos (botón): en segundos, con el mismo cero.
+- eventos (botón): en segundos, con el mismo cero. Si la carpeta tiene `eventos_corregidos.csv`
+  (pulsos corregidos a mano), se lee ese en vez de `eventos.csv`, y `verificar` y `ascensor` lo
+  dicen en el reporte (`texto_eventos`).
 
 Ignora cualquier campo extra de meta.json y las columnas mx, my, mz (vacías: el MPU-6500 no tiene
 magnetómetro). Si `firmware_version` es "simulador", avisa.
@@ -112,8 +114,9 @@ ese tramo es donde más cambia el sesgo (-0,043 °/s entre el primer y el segund
 temperatura queda plana y gx sigue derivando lento (~-0,005 °/s cada 10 min), así que la deriva no
 se explica solo con la temperatura.
 
-**`recortar(s)`** (dentro de `leer_sesion`): con `--botones` y/o `--recorte N` se quedan solo las
-muestras dentro de la ventana elegida (IMU, barómetro y eventos), sin cambiar el eje de tiempo.
+**`recortar(s)`** (dentro de `leer_sesion`): con `--botones`, `--recorte N` y/o `--hasta T` se
+quedan solo las muestras dentro de la ventana elegida (IMU, barómetro y eventos), sin cambiar el eje
+de tiempo. `--hasta T` corta en el segundo T, después de las otras dos opciones.
 Antes, `leer_sesion` ignora las pulsaciones a menos de 1 s de la anterior (rebote del pulsador).
 
 **`comando_caras`**: busca tramos quietos de más de 10 s. En cada uno promedia la aceleración y
@@ -160,8 +163,8 @@ Si la sesión de caras es simulada (`firmware_version` = `simulador`), el result
 
 ## 5. Ascensor (`comando_ascensor`)
 
-> **Todavía solo con datos simulados.** No hemos grabado el ascensor; los números de esta sección
-> salen de `datos/simulados/ascensor` y sus resultados están en `resultados/simulados/`.
+> Probado con la sesión real `ascensor_2026-11-26` (resultados en `RESULTADOS_AVANCE.md`,
+> sección 5) y con la simulada `datos/simulados/ascensor`.
 
 1. Calibra con caras. En el reposo inicial, la aceleración promedio apunta hacia arriba (el
    acelerómetro quieto mide +g hacia arriba). Su dirección `arriba` también corrige si la caja está
@@ -184,16 +187,31 @@ Si la sesión de caras es simulada (`firmware_version` = `simulador`), el result
    Es como un resorte que jala la altura integrada hacia la del barómetro con una constante de tiempo
    τ. En las paradas también se pone v = 0. Se eligió el complementario y no Kalman porque tiene un
    solo parámetro (τ), se entiende y alcanza para un movimiento en una dimensión.
-8. **Errores:** altura promedio en cada parada, comparada con el piso real más cercano de
-   `pisos.csv`. Si está vacío, se compara con el barómetro: eso **no es error real**, es cuánto
-   coinciden acelerómetro y barómetro.
+8. **Errores:** altura promedio en cada parada, comparada con una referencia:
+   - si la carpeta tiene `paradas.csv` (`leer_paradas`), con el piso anotado para esa parada y su
+     altura de `pisos.csv`. Tiene que tener tantas filas como paradas detectadas; si no, avisa y no
+     lo usa;
+   - si no, con el piso real más cercano de `pisos.csv`. Falla si la altura medida está más cerca
+     de otro piso: en el ascensor real, una parada en el piso 3 medida a 11,4 m quedaba en el piso 4;
+   - si `pisos.csv` está vacío, con el barómetro: eso **no es error real**, es cuánto coinciden
+     acelerómetro y barómetro.
+   Con `paradas.csv` además se imprime el **desnivel de cada recorrido** (llegada − salida) según
+   el barómetro, el acelerómetro con ZUPT y la fusión, junto al real. Así se ve si los dos sensores
+   coinciden entre sí y con la cinta, tramo por tramo.
 9. **Cruces de piso:** en cada tramo el ascensor va en una sola dirección, así que
    f(t) = h(t) − h_piso cambia de signo una sola vez entre el inicio y el fin del tramo. La bisección
    encuentra ese instante (h(t) entre muestras se obtiene con `interpolar`). Solo se buscan pisos
-   intermedios; la llegada la marca el botón.
+   intermedios; la llegada la marca el botón. Con `paradas.csv` se buscan exactamente los pisos que
+   hay entre el de salida y el de llegada; sin él, los niveles que quedan a más de 0,5 m del inicio
+   y del fin del tramo.
 10. **Predicción del error:** sin restar el sesgo, la altura se desvía ½·b·t²; restándolo queda el
     ruido, que da σ_h ≈ ruido·√dt·t^1,5/√3. Se compara con lo observado (contra la fusión) en la
     figura `*_ascensor_error.png`.
+
+Con el ascensor real (12 recorridos): error RMS en las paradas de 308 m sin correcciones, 68 m
+restando el sesgo, 1,41 m con ZUPT y 0,99 m con la fusión. La mayor parte del error de la fusión es
+la altura PB→1 de la cinta, que los dos sensores ven ~0,8 m más alta, y la deriva del barómetro
+(~0,7 m en 5 min).
 
 Lo que salió con el ascensor simulado (pisos sintéticos, solo para probar): sin correcciones, ~12 m
 de error; restando el sesgo, ~5 m; con ZUPT, 0,05 m. La fusión dio 0,20 m porque el barómetro

@@ -15,3 +15,6 @@ fecha_proceso,comando,sesion,firmware,duracion_s,recorte_s,desplazamiento_m,vel_
 2026-11-21 11:03:00,metro,metro_1,simulador,458.3,,3941.0,20.24,1.24,77.0;83.5;97.9;87.0,4 tramos; giro total -25.5°,"SIMULADO: datos inventados por el simulador, solo para probar el código."
 2026-11-21 11:03:00,metro,metro_2,simulador,458.3,,3950.5,20.06,1.25,77.0;83.5;97.9;87.0,4 tramos; giro total -26.6°,"SIMULADO: datos inventados por el simulador, solo para probar el código."
 2026-11-21 11:03:00,metro,metro_3,simulador,458.3,,3942.1,20.08,1.26,87.0;97.9;83.5;77.0,4 tramos; giro total 25.5°,"SIMULADO: datos inventados por el simulador, solo para probar el código."
+2026-11-26 16:29:38,verificar,ascensor_2026-11-26,0.1,315.0,,,,,,perdidas imu=0 baro=0; fs=200.00 Hz,
+2026-11-26 16:29:42,ascensor,ascensor_2026-11-26,0.1,305.0,0.0-305.0,16.80,1.33,5.89,12.4;10.4;15.5;19.8;16.1;15.5;20.5;14.8;12.1;8.7;11.2;12.7,RMS fusion 0.989 m vs piso de cada parada,
+2026-11-26 16:34:45,metodos,-,,,,,,,,"bmp280 OK; orden rect 1.00, trap 2.00",

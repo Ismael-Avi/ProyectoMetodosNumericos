@@ -1,0 +1,69 @@
+=== Ascensor: ascensor_2026-11-26 (305.0 s, recortado: se usa de 0.0 a 305.0 s) ===
+Calibracion de caras usada: sesion caras_2026-11-24
+Reposo inicial: de 0.0 a 5.8 s; |g| medido 9.7592 m/s²; inclinacion 7.00°; sesgo vertical b = -0.0108 m/s²; ruido 0.0948 m/s²
+pulsos del boton: eventos_corregidos.csv (corregidos a mano; se usa EN VEZ de eventos.csv)
+Paradas (ZUPT) segun eventos_corregidos.csv (pares salida/llegada)
+Referencia en cada parada: piso de cada parada (paradas.csv), altura de pisos.csv
+metodo | error RMS en paradas (m) | error max (m) | altura final (m)
+  rectangulo sin correccion    |    308.265 |    634.888 |  -645.582
+  trapecio sin correccion      |    308.226 |    634.819 |  -645.511
+  trapecio - sesgo             |     68.068 |    147.115 |  -142.805
+  rectangulo - sesgo + ZUPT    |      1.433 |      2.131 |     9.186
+  trapecio - sesgo + ZUPT      |      1.411 |      2.108 |     9.142
+  solo barometro               |      1.000 |      1.726 |    11.467
+  fusion acel+baro + ZUPT      |      0.989 |      1.696 |    11.459
+parada | piso | t (s) | baro (m) | trapecio+ZUPT (m) | fusion (m) | referencia (m) | error fusion (m)
+   0 | 0 |     0.0 |    0.00 |    0.00 |    0.03 |    0.00 | +0.035
+   1 | 1 |    19.2 |    5.73 |    5.41 |    5.74 |    4.90 | +0.844
+   2 | 3 |    40.5 |   10.70 |    9.46 |   10.68 |    9.90 | +0.777
+   3 | 0 |    67.4 |    0.40 |    1.46 |    0.41 |    0.00 | +0.409
+   4 | 5 |    97.9 |   15.77 |   16.95 |   15.72 |   14.86 | +0.865
+   5 | 1 |   124.5 |    5.98 |    6.85 |    5.99 |    4.90 | +1.086
+   6 | 5 |   150.4 |   15.80 |   16.97 |   15.76 |   14.86 | +0.895
+   7 | 0 |   181.7 |    0.31 |    1.57 |    0.29 |    0.00 | +0.287
+   8 | 3 |   207.1 |   10.82 |   11.44 |   10.82 |    9.90 | +0.916
+   9 | 1 |   229.9 |    5.95 |    6.43 |    5.97 |    4.90 | +1.068
+  10 | 3 |   248.0 |   11.04 |   11.49 |   11.05 |    9.90 | +1.146
+  11 | 5 |   273.7 |   16.59 |   14.24 |   16.56 |   14.86 | +1.696
+  12 | 3 |   295.8 |   11.42 |    9.14 |   11.40 |    9.90 | +1.503
+Desnivel de cada recorrido (altura de la parada de llegada - la de salida):
+recorrido | real (m) | baro (m) | trapecio+ZUPT (m) | fusion (m) | baro - acel (m) | fusion - real (m)
+   1 0->1 |   4.90 |   5.73 |   5.41 |   5.71 | +0.32 | +0.81
+   2 1->3 |   5.00 |   4.96 |   4.05 |   4.93 | +0.91 | -0.07
+   3 3->0 |  -9.90 | -10.30 |  -7.99 | -10.27 | -2.30 | -0.37
+   4 0->5 |  14.86 |  15.37 |  15.49 |  15.32 | -0.12 | +0.46
+   5 5->1 |  -9.96 |  -9.79 | -10.10 |  -9.74 | +0.31 | +0.22
+   6 1->5 |   9.96 |   9.82 |  10.12 |   9.77 | -0.29 | -0.19
+   7 5->0 | -14.86 | -15.49 | -15.40 | -15.47 | -0.10 | -0.61
+   8 0->3 |   9.90 |  10.51 |   9.87 |  10.53 | +0.64 | +0.63
+   9 3->1 |  -5.00 |  -4.87 |  -5.02 |  -4.85 | +0.14 | +0.15
+  10 1->3 |   5.00 |   5.08 |   5.06 |   5.08 | +0.02 | +0.08
+  11 3->5 |   4.96 |   5.55 |   2.75 |   5.51 | +2.81 | +0.55
+  12 5->3 |  -4.96 |  -5.17 |  -5.09 |  -5.15 | -0.07 | -0.19
+Cruces de pisos intermedios por biseccion (fusion; la llegada la marca eventos_corregidos.csv): 23
+  recorrido  2: t =   32.153 s cruza   7.42 m (piso 2)
+  recorrido  3: t =   55.477 s cruza   7.42 m (piso 2)
+  recorrido  3: t =   57.474 s cruza   4.90 m (piso 1)
+  recorrido  4: t =   82.379 s cruza   4.90 m (piso 1)
+  recorrido  4: t =   84.396 s cruza   7.42 m (piso 2)
+  recorrido  4: t =   86.425 s cruza   9.90 m (piso 3)
+  recorrido  4: t =   88.418 s cruza  12.34 m (piso 4)
+  recorrido  5: t =  112.682 s cruza  12.34 m (piso 4)
+  recorrido  5: t =  114.663 s cruza   9.90 m (piso 3)
+  recorrido  5: t =  116.712 s cruza   7.42 m (piso 2)
+  recorrido  6: t =  137.221 s cruza   7.42 m (piso 2)
+  recorrido  6: t =  139.163 s cruza   9.90 m (piso 3)
+  recorrido  6: t =  141.140 s cruza  12.34 m (piso 4)
+  recorrido  7: t =  165.461 s cruza  12.34 m (piso 4)
+  recorrido  7: t =  167.518 s cruza   9.90 m (piso 3)
+  recorrido  7: t =  169.544 s cruza   7.42 m (piso 2)
+  recorrido  7: t =  171.640 s cruza   4.90 m (piso 1)
+  recorrido  8: t =  196.538 s cruza   4.90 m (piso 1)
+  recorrido  8: t =  198.554 s cruza   7.42 m (piso 2)
+  recorrido  9: t =  222.014 s cruza   7.42 m (piso 2)
+  recorrido 10: t =  242.513 s cruza   7.42 m (piso 2)
+  recorrido 11: t =  264.271 s cruza  12.34 m (piso 4)
+  recorrido 12: t =  288.798 s cruza  12.34 m (piso 4)
+Prediccion del error al final (contra la fusion como mejor estimacion):
+  sin restar sesgo: predicho ½·b·t² = 502.71 m (más el ruido, ver abajo), observado 656.97 m
+  restando sesgo (queda el ruido): predicho ruido·raiz(dt)·t^1.5/raiz(3) = 20.61 m, observado 154.26 m (si es mucho mayor, el sesgo cambio durante el registro)

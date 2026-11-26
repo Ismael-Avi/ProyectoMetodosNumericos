@@ -5,8 +5,8 @@ BMP280, firmware `firmware/registrador_v01/registrador_v01.ino`) y los archivos 
 usa `navegacion.py`. Las sesiones de `simulados/` las genera el simulador, solo sirven para probar
 el código y no se suben a git.
 
-Los números de la tabla salen de `python navegacion.py verificar datos/<sesion>` (corrida del
-24/11/2026). La inclinación sale de `python navegacion.py reposo` y `caras` (ángulo respecto al eje más
+Los números de la tabla salen de `python navegacion.py verificar datos/<sesion>` (corridas del
+24/11/2026; el ascensor, del 26/11/2026). La inclinación sale de `python navegacion.py reposo` y `caras` (ángulo respecto al eje más
 cercano, sin calibrar).
 
 ## Sesiones
@@ -17,6 +17,7 @@ cercano, sin calibrar).
 | `reposo_90min_2026-11-21_1915-2049/` | 21/11/2026, 19:15 a 20:49 | reposo largo (90 min) | 5694,3 s (94,9 min) | 1 138 860 | 142 358 | 0 / 0 | 200,000 / 200,000 Hz | 25,000 / 25,000 Hz | power bank | sobre una mesa nivelada (casa de Ismael), eje z hacia arriba, protoboard inclinada 9,2° |
 | `caras_2026-11-24v1/` | 24/11/2026, aprox. 18:00 | seis caras, segundo intento (comparación; no es la calibración oficial) | 481,5 s (8,0 min) | 96 306 | 12 039 | 0 / 0 | 200,000 / 200,000 Hz | 25,000 / 25,000 Hz | power bank | sobre una mesa nivelada (casa de Cesar); protoboard fijada dentro de una caja; solo las seis caras, inclinadas 3,0° a 9,0° |
 | `caras_2026-11-24/` | 24/11/2026, aprox. 18:30 | seis caras + 8 posiciones inclinadas (**calibración oficial**) | 746,7 s (12,4 min) | 149 332 | 18 667 | 0 / 0 | 200,000 / 200,000 Hz | 25,000 / 25,000 Hz | power bank | sobre una mesa nivelada (casa de Cesar); protoboard fijada dentro de una caja; seis caras y 8 posiciones inclinadas de 5,2° a 22,3° |
+| `ascensor_2026-11-26/` | 26/11/2026 | ascensor: 13 recorridos entre PB, 1, 3 y 5 (se usan los 12 primeros, hasta 305 s) | 315,0 s (5,3 min) | 63 004 | 7 876 | 0 / 0 | 200,000 / 200,000 Hz | 25,000 / 25,000 Hz | power bank por V5 | caja en el piso del ascensor, inclinada 7,0° (calibrado) |
 
 Otros datos de `verificar`:
 
@@ -38,6 +39,13 @@ Otros datos de `verificar`:
   pulsaciones. `caras` encuentra 8 tramos quietos: las 6 caras y 2 repeticiones (z+ y x+). Segundo
   intento de la calibración; el primero se descartó y no está en el proyecto. Nombre `sesion_NNN`
   original: no registrado.
+- `ascensor_2026-11-26`: periodo medio del IMU 5000,0 µs, jitter 1,0 µs (mín. 4993, máx. 5007 µs).
+  `eventos.csv` tiene 33 pulsaciones (21 tras quitar los rebotes de menos de 1 s), con pulsos de
+  más y de menos, así que no se pueden armar los pares cierre/apertura. La carpeta tiene además dos
+  archivos escritos a mano (ver abajo): `eventos_corregidos.csv` (12 pares) y `paradas.csv` (piso de
+  las 13 paradas). Los cuatro archivos del firmware no se modificaron. El último recorrido se cortó
+  al llegar: se analiza hasta 305 s (`--hasta 305`). Detalle en `../bitacora.md`, sección 2.5.
+  Nombre `sesion_NNN` original: no registrado.
 
 Los archivos que vienen de la microSD tienen fecha de modificación 01/01/1980, porque el ESP32 no
 sabe la fecha. La fecha y la hora reales se anotan en `../bitacora.md`.
@@ -71,7 +79,7 @@ encender.
 | `notas` | texto | aclaraciones del firmware |
 
 `bmp280_calib` tiene los 12 coeficientes que el firmware lee de los registros 0x88 a 0x9F del BMP280
-(little-endian). Hacen falta para la fórmula de compensación. En las cuatro sesiones reales son
+(little-endian). Hacen falta para la fórmula de compensación. En las cinco sesiones reales son
 los mismos, porque es el mismo chip:
 
 | Coeficiente | Tipo | Valor |
@@ -126,6 +134,17 @@ t_us,evento
 - `t_us`: instante de la pulsación del botón, en microsegundos desde el arranque (mismo reloj que
   `imu.csv`). Se toma dentro de la interrupción.
 - `evento`: siempre 1 (pulsación del botón en el pin G4).
+
+### Archivos opcionales escritos a mano
+
+No los escribe el firmware. Se agregan a la carpeta de una sesión cuando hace falta corregir algo
+sin tocar los datos originales.
+
+- `eventos_corregidos.csv`: mismo formato que `eventos.csv`. Si existe, `navegacion.py` lo usa en
+  vez de `eventos.csv` y lo dice en el reporte. Para escribirlo a partir de segundos:
+  `t_us = t_us de la primera muestra del IMU + s·10⁶`.
+- `paradas.csv`: columnas `parada,piso`, una fila por parada del ascensor (la primera es el reposo
+  inicial). `ascensor` la usa como referencia en vez del piso más cercano.
 
 ## Conversión a unidades físicas
 
@@ -189,7 +208,7 @@ Tomada de `firmware/registrador_v01/registrador_v01.ino`:
 
 | Archivo | Columnas | Estado |
 |---|---|---|
-| `pisos.csv` | `piso,altura_m,fuente` | **vacío** (solo encabezado). Falta medir la altura de cada piso con flexómetro |
+| `pisos.csv` | `piso,altura_m,fuente` | lleno (flexómetro, 26/11/2026, edificio del ascensor). **PB→1 (4,90 m) se va a volver a medir:** el barómetro y el acelerómetro dan ~5,7 m |
 | `estaciones.csv` | `orden,estacion,lat,lon,distancia_al_siguiente_m,fuente` | **vacío** (solo encabezado). Faltan las estaciones del Metro con fuente verificable |
 | `viajes.csv` | `sesion,estacion_inicial,sentido` | **vacío** (solo encabezado). Se llena con cada viaje en metro |
 

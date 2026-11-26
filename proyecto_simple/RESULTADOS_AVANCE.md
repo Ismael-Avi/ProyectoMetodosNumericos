@@ -2,8 +2,8 @@
 
 Navegación inercial en el Metro de Quito. Métodos Numéricos, EPN.
 
-**Alcance del avance:** reposo, calibración de seis caras y ascensor. El ascensor todavía no se ha
-grabado (ver la última sección). El metro va en el segundo parcial.
+**Alcance del avance:** reposo, calibración de seis caras y ascensor (sección 5). El metro va en el
+segundo parcial.
 
 **Dispositivo:** ESP32 + GY-91 (acelerómetro y giroscopio MPU-6500, barómetro BMP280). Guarda los
 datos crudos en una microSD: acelerómetro y giroscopio a 200 Hz, barómetro a 25 Hz. Todo se procesa
@@ -139,15 +139,104 @@ Chequeos que se cumplen con los datos reales:
   - el rectángulo converge con orden 1 y el trapecio con orden 2 (`resultados/metodos_convergencia.png`:
     dos rectas, la del trapecio con el doble de pendiente).
 
-## 5. Ascensor: pendiente
+## 5. Ascensor (`ascensor_2026-11-26`, 26/11/2026)
 
-El programa (`python navegacion.py ascensor`) ya está hecho y probado con datos simulados. Falta:
+**Qué se hizo:** la caja en el piso del ascensor, alimentada con una power bank por el pin V5. El
+edificio tiene PB y 5 pisos, pero solo hay acceso a PB, 1, 3 y 5. Se hicieron 13 recorridos:
 
-- Grabar en un edificio de **al menos 5 pisos**, **al menos 10 recorridos** de subida y bajada con
-  paradas intermedias. Primeros 10 s quieto; un pulso del botón al cerrarse la puerta y otro al
-  abrirse.
-- Medir con flexómetro la **altura real de cada piso** y llenarla en `datos/pisos.csv` (hoy está
-  vacío). Sin eso, la altura solo se puede comparar con el barómetro, no con la realidad.
-- Soldar el pulsador (hoy rebota) antes de grabar.
-- Con esos datos: altura y velocidad con dos métodos de integración, con y sin ZUPT, con y sin
-  barómetro, y el error en cada piso.
+0→1, 1→3, 3→0, 0→5, 5→1, 1→5, 5→0, 0→3, 3→1, 1→3, 3→5, 5→3, 3→1.
+
+Son 12 recorridos útiles. El 13 se cortó al llegar (se apagó sin reposo final), así que se analiza
+la sesión solo hasta t = 305 s:
+
+```
+python navegacion.py verificar datos/ascensor_2026-11-26
+python navegacion.py ascensor  datos/ascensor_2026-11-26 --hasta 305
+```
+
+**Alturas de los pisos** (`datos/pisos.csv`, flexómetro): PB 0,00; 1: 4,90; 2: 7,42; 3: 9,90;
+4: 12,34; 5: 14,86 m.
+
+**Pulsos corregidos a mano.** `eventos.csv` tiene 33 pulsaciones y quedan 21 tras quitar los rebotes
+(pulsos dobles a 0,2–0,35 s). Además, el primer pulso (0,3 s) fue una marca de inicio y no un
+cierre de puerta, y faltan pulsos en los recorridos 10, 12 y 13. Con eso no se pueden armar los
+pares. Por eso se hizo `eventos_corregidos.csv` (12 pares cierre/apertura), que el programa usa en
+vez de `eventos.csv`; el archivo original no se tocó. Cuatro pulsos son inventados (6,8; 239,3;
+248,0 y 283,1 s): salen del arranque y la parada que se ven en el acelerómetro. `paradas.csv` dice
+en qué piso estaba cada una de las 13 paradas. Con el "piso más cercano", la última parada (piso 3,
+medido 11,4 m) se confundía con el piso 4.
+
+**Números clave:**
+- 63 004 muestras del IMU y 7 876 del barómetro, 0 perdidas; 200,000 Hz al inicio y al final.
+- Reposo inicial (0 a 5,8 s): |g| calibrado 9,759 m/s², inclinación 7,0°. Ruido del acelerómetro
+  **0,095 m/s²**, 5 a 7 veces más que sobre la mesa (0,013–0,018), porque el piso del ascensor
+  vibra.
+- Velocidad de crucero ~1,25 m/s; recorridos de 8,7 a 20,5 s (entre pulsos).
+
+**Error de altura en las 13 paradas**, contra el piso de `paradas.csv`:
+
+| Método | Error RMS (m) | Error máx. (m) |
+|---|---|---|
+| Rectángulo sin corrección | 308,3 | 634,9 |
+| Trapecio sin corrección | 308,2 | 634,8 |
+| Trapecio − sesgo | 68,1 | 147,1 |
+| Rectángulo − sesgo + ZUPT | 1,43 | 2,13 |
+| Trapecio − sesgo + ZUPT | 1,41 | 2,11 |
+| Solo barómetro | 1,00 | 1,73 |
+| Fusión acelerómetro + barómetro + ZUPT | **0,99** | 1,70 |
+
+- **Rectángulo y trapecio** dan casi lo mismo (diferencia de 0,02 m con ZUPT). El método de
+  integración no importa; lo que importa es corregir el sensor (igual que en `metodos`).
+- **Sin ZUPT** el error llega a cientos de metros en 5 min: un sesgo de 0,01 m/s² da
+  ½·b·t² ≈ 500 m en 305 s. Restar el sesgo del reposo inicial no basta (147 m), porque el error
+  restante no es constante (ver la figura de velocidad).
+- **Con ZUPT** el error baja a ~1,4 m sin usar el barómetro.
+- Casi todo el error de la fusión (~0,8 m en cada piso sobre PB) viene de la altura PB→1 (ver
+  abajo), no del método.
+
+**Cruces de pisos (bisección):** 23 cruces de pisos intermedios, los 23 que tocan: en cada recorrido
+se buscan los pisos que hay entre el de salida y el de llegada. Por ejemplo, en el 0→5 (recorrido 4)
+cruza los pisos 1, 2, 3 y 4 en 82,4; 84,4; 86,4 y 88,4 s, uno cada ~2,0 s. Con pisos de ~2,5 m
+eso da ~1,25 m/s, la velocidad de crucero.
+
+**Figura principal:** `resultados/ascensor_2026-11-26_ascensor.png`.
+**Qué mirar:**
+- Arriba, la altura: gris el barómetro, naranja la fusión, azul el acelerómetro con ZUPT (sin
+  barómetro). Las líneas punteadas son los pisos reales; los puntos negros, los cruces.
+  - Las mesetas de la fusión en los pisos 1, 3 y 5 quedan ~0,8 m **por encima** de su línea: es la
+    discrepancia PB→1.
+  - La azul sigue a las otras dos, pero se separa en tres saltos: en ~40 s (queda en 9,5 m en vez
+    de 10,7), en ~67 s (llega a PB en 1,5 m) y en ~273 s (se queda corta en el piso 5). Son los
+    recorridos 2, 3 y 11. En ellos el ascensor arrancó **0,3 a 0,5 s antes** del pulso de cierre,
+    así que la integración empieza con el ascensor ya en movimiento y pierde 0,17, 0,32 y 0,38 m/s.
+    Integrando desde 3 s antes, la velocidad al llegar baja a −0,04 a −0,10 m/s, como en los demás
+    recorridos. Los pulsos de esos recorridos son los originales; se dejaron así.
+- Abajo, la velocidad. La azul (sin ZUPT) no vuelve a 0 en las paradas. Cada recorrido le deja
+  ~−0,07 m/s (de −0,01 a −0,14), y en las paradas sigue bajando despacio (sesgo residual de
+  ~−0,004 m/s², unos −0,04 m/s por parada). Ese error se va acumulando. Las otras dos curvas
+  vuelven a 0 en cada parada (ZUPT). Crucero de ~±1,25 m/s.
+
+**Figura de apoyo:** `resultados/ascensor_2026-11-26_ascensor_error.png`.
+**Qué mirar:** sin restar el sesgo, el error observado (azul) sigue a ½·b·t² (naranja punteada).
+Restando el sesgo, el error observado (verde) queda muy por encima de la predicción por ruido
+(roja): 154 m contra 21 m al final. El ruido no lo explica: el sesgo que se mide en el reposo
+inicial no es el mismo durante toda la sesión, y cada recorrido deja además un poco de velocidad.
+Solo 0,003 m/s² de diferencia media ya dan ½·0,003·305² ≈ 140 m.
+
+**Coherencia barómetro vs acelerómetro.** Desnivel de cada recorrido (llegada − salida):
+
+- En 8 de los 12 recorridos, barómetro y acelerómetro con ZUPT coinciden a 0,32 m o menos. Los
+  otros cuatro son el 2, el 3 y el 11 (pulso tardío, arriba) y el 8 (0,64 m).
+- **1→3 y 3→5 coinciden con la cinta:** recorrido 10 (1→3): real 5,00, barómetro 5,08,
+  acelerómetro 5,06 m. Recorrido 9 (3→1): real −5,00, barómetro −4,87, acelerómetro −5,02 m.
+  Recorrido 12 (5→3): real −4,96, barómetro −5,17, acelerómetro −5,09 m.
+- **PB→1 no coincide:** en el recorrido 1 (0→1) el barómetro da 5,73 m y la cinta 4,90 m. Los dos
+  sensores dicen ~5,7 m, y el error de +0,8 m aparece en todos los pisos sobre PB (piso 3 medido
+  10,7 m contra 9,90; piso 5, 15,8 contra 14,86). Por eso parece un error en la medida de PB→1 y no
+  en los sensores. **Se va a volver a medir PB→1**; por ahora `pisos.csv` deja 4,90 m.
+
+**Deriva del barómetro: ~0,7 m en 5 min.** El mismo piso da alturas distintas con el tiempo: piso 3,
+10,70 m a los 40 s y 11,42 m a los 296 s (+0,72 m). Piso 5, 15,77 m a los 98 s y 16,59 m a los
+274 s (+0,82 m). Equivale a ~6 Pa (1 Pa ≈ 0,12 m). Por eso los errores de la fusión crecen hacia el
+final de la sesión (+1,5 a +1,7 m en las últimas paradas). El ruido de la altura barométrica en
+reposo es de 0,26 m (2,2 Pa).

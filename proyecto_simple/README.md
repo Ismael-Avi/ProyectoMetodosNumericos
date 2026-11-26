@@ -16,7 +16,7 @@ Rutas relativas a `proyecto_simple/`:
 | Programa | [`navegacion.py`](navegacion.py), explicado en [`EXPLICACION.md`](EXPLICACION.md) |
 | Datos crudos | [`datos/`](datos/): una carpeta por sesión real (`meta.json`, `imu.csv`, `baro.csv`, `eventos.csv`) |
 | Descripción de los datos | [`datos/LEEME.md`](datos/LEEME.md): tabla de sesiones, formato de cada archivo, conversión a unidades y configuración del sensor |
-| Resultados del avance | [`RESULTADOS_AVANCE.md`](RESULTADOS_AVANCE.md): resumen para el docente (reposo y seis caras con datos reales; ascensor pendiente) |
+| Resultados del avance | [`RESULTADOS_AVANCE.md`](RESULTADOS_AVANCE.md): resumen para el docente (reposo, seis caras y ascensor, con datos reales) |
 | Resultados | [`resultados/`](resultados/): figuras y reportes de las sesiones reales. Los de sesiones simuladas están aparte, en [`resultados/simulados/`](resultados/simulados/) |
 | Fotos del montaje | [`fotos/`](fotos/) (TODO: subir las fotos) |
 
@@ -35,10 +35,11 @@ navegacion.py            todo el procesamiento
 firmware/registrador_v01 firmware del dispositivo (copia sin cambios del que ya se probó)
 datos/<sesion>/          sesiones reales: meta.json, imu.csv, baro.csv, eventos.csv
                          (sesion_002, reposo_90min_2026-11-21_1915-2049, caras_2026-11-24,
-                         caras_2026-11-24v1)
+                         caras_2026-11-24v1, ascensor_2026-11-26). Opcionales, escritos a mano:
+                         eventos_corregidos.csv y paradas.csv (ver abajo)
 datos/LEEME.md           descripción de las sesiones y del formato de los archivos
 datos/simulados/         sesiones simuladas, solo para probar el código (no se suben a git)
-datos/pisos.csv          altura real de cada piso (flexómetro)       -> VACÍO, falta medir
+datos/pisos.csv          altura real de cada piso (flexómetro, 26/11/2026; PB->1 a volver a medir)
 datos/estaciones.csv     estaciones, coordenadas y largo de cada tramo -> VACÍO, falta llenar
 datos/viajes.csv         en qué estación empezó cada viaje y en qué sentido -> VACÍO
 resultados/              figuras (.png) y reportes (.txt) de las sesiones reales, y calibracion.json
@@ -67,7 +68,7 @@ Se corren desde la carpeta `proyecto_simple/`:
 | `reposo` | sesgo y ruido de cada eje, detector quieto / en movimiento, inclinación, deriva por bloques de 10 min (giroscopio, acelerómetro, presión, temperatura) con figura `*_deriva.png` | `python navegacion.py reposo datos/sesion_002` |
 | `caras` | calibración de seis caras; guarda `resultados/calibracion.json` (si la sesión es simulada, guarda `resultados/simulados/calibracion_simulada.json`, que ningún comando usa). Figura `*_caras.png`: \|g\| antes y después de calibrar en cada tramo quieto. Además muestra \|g\| calibrado en cada tramo quieto que no se usó (posiciones inclinadas): prueba de que \|g\| no cambia al girar | `python navegacion.py caras datos/caras_2026-11-24` |
 | `metodos` | prueba del BMP280 y de los métodos numéricos contra numpy y contra soluciones exactas | `python navegacion.py metodos` |
-| `ascensor` | altura y velocidad con dos métodos, ZUPT, barómetro, fusión, cruces de piso, errores. **Por ahora solo probado con datos simulados** | `python navegacion.py ascensor datos/simulados/ascensor` |
+| `ascensor` | altura y velocidad con dos métodos, ZUPT, barómetro, fusión, desnivel de cada recorrido, cruces de piso, errores | `python navegacion.py ascensor datos/ascensor_2026-11-26 --hasta 305` |
 | `metro` | rumbo, velocidad, distancia por tramo, trayectoria y dispersión entre viajes. **Por ahora solo probado con datos simulados** | `python navegacion.py metro datos/simulados/metro_1 datos/simulados/metro_2` |
 
 **Opciones** (sirven con cualquier comando que lee una sesión):
@@ -75,6 +76,17 @@ Se corren desde la carpeta `proyecto_simple/`:
 - `--botones`: usa solo desde la primera hasta la última pulsación del botón.
 - `--recorte N`: quita N segundos al inicio y al final. Si se combina con `--botones`, se quitan
   después de las pulsaciones (así no entra el movimiento de apretar el botón).
+- `--hasta T`: usa la sesión solo hasta T segundos (tiempo desde la primera muestra del IMU). Sirve
+  para dejar fuera un final cortado, como el último recorrido del ascensor.
+
+**Archivos opcionales en la carpeta de una sesión** (escritos a mano; los cuatro archivos del
+firmware no se tocan):
+
+- `eventos_corregidos.csv`: mismo formato que `eventos.csv` (`t_us,evento`). Si existe, se usa en
+  vez de `eventos.csv` y el reporte lo dice. Sirve cuando faltan pulsos, sobran o hay rebotes.
+- `paradas.csv` (`parada,piso`): el piso de cada parada del ascensor, empezando por el reposo
+  inicial. Si existe, `ascensor` compara cada parada con ese piso y no con el piso más cercano, y
+  solo busca cruces de los pisos que quedan entre el de salida y el de llegada.
 
 El tiempo conserva el eje original (el segundo 3 sigue siendo el segundo 3). Ejemplo con el reposo
 real de 95 min:
@@ -93,20 +105,24 @@ Orden recomendado: `verificar` → `reposo` → `caras` (una vez) → `ascensor`
 
 ## Resultados con datos reales
 
-Hasta ahora hay cuatro sesiones reales: dos de reposo (`sesion_002`, 142 s, y
-`reposo_90min_2026-11-21_1915-2049`, 94,9 min) y dos de seis caras (`caras_2026-11-24`, la
-calibración oficial, y `caras_2026-11-24v1`, un intento anterior que sirve para comparar). El resumen
-está en [`RESULTADOS_AVANCE.md`](RESULTADOS_AVANCE.md). Los números principales:
+Hasta ahora hay cinco sesiones reales: dos de reposo (`sesion_002`, 142 s, y
+`reposo_90min_2026-11-21_1915-2049`, 94,9 min), dos de seis caras (`caras_2026-11-24`, la
+calibración oficial, y `caras_2026-11-24v1`, un intento anterior que sirve para comparar) y una de
+ascensor (`ascensor_2026-11-26`, 12 recorridos útiles). El resumen está en
+[`RESULTADOS_AVANCE.md`](RESULTADOS_AVANCE.md). Los números principales:
 
-- 0 muestras perdidas y 200,000 Hz al inicio y al final en las cuatro sesiones, incluida la de 95 min.
+- 0 muestras perdidas y 200,000 Hz al inicio y al final en las cinco sesiones, incluida la de 95 min.
 - Sesgo del giroscopio ~(-4,5; -1,8; -0,2) °/s; ruido del acelerómetro 0,013 a 0,018 m/s².
 - Calibración de seis caras: |g| en 8 posiciones que no se usaron para calibrar pasa de 9,661–10,127
   a 9,770–9,799 m/s². Los sesgos de dos calibraciones distintas coinciden (diferencias de 0,003 a
   0,022 m/s²).
 
-**El ascensor y el metro todavía no se han grabado.** Todo lo que el programa calcula para ellos
-(`ascensor`, `metro`) se probó solo con sesiones simuladas, y sus resultados están en
-`resultados/simulados/`.
+- Ascensor: error RMS de altura en las paradas de 1,41 m con trapecio + ZUPT y 0,99 m con la fusión
+  acelerómetro + barómetro (más de 300 m sin correcciones). 23 cruces de pisos encontrados por
+  bisección. El barómetro deriva ~0,7 m en 5 min.
+
+**El metro todavía no se ha grabado.** El comando `metro` se probó solo con sesiones simuladas, y
+sus resultados están en `resultados/simulados/`.
 
 ## Cómo hay que grabar (lo que el programa supone)
 
@@ -114,7 +130,9 @@ está en [`RESULTADOS_AVANCE.md`](RESULTADOS_AVANCE.md). Los números principale
   giroscopio y la presión de referencia. El giroscopio de este MPU-6500 tiene unos -4,5 °/s de
   sesgo en x, así que esto es obligatorio en cada sesión.
 - **Botón en pares.** Ascensor: un pulso al cerrarse la puerta (antes de moverse) y otro al
-  abrirse (ya detenido). Metro: un pulso al salir de la estación y otro al llegar. Cada par
+  abrirse (ya detenido). En el ascensor del 26/11, tres pulsos de cierre llegaron 0,3–0,5 s
+  después del arranque y el acelerómetro perdió hasta 0,38 m/s. Mejor pulsar antes de que se
+  cierre la puerta. Metro: un pulso al salir de la estación y otro al llegar. Cada par
   (salida, llegada) es un tramo; entre pares el dispositivo está parado y se aplica ZUPT. Si el
   número de pulsos es impar, el programa usa el detector de quietud, que no distingue una parada
   de una velocidad constante. Por eso conviene no olvidar ningún pulso.
@@ -171,8 +189,9 @@ Parámetros elegidos por nosotros (no son constantes físicas):
 
 ## Lo que todavía no se puede hacer
 
-- Los errores contra la realidad salen en cuanto se llenen `pisos.csv` y `estaciones.csv` (y `viajes.csv`).
-  Mientras estén vacíos, el ascensor se compara contra el barómetro y el metro no tiene error.
+- Los errores del metro contra la realidad salen en cuanto se llenen `estaciones.csv` y
+  `viajes.csv`. Mientras estén vacíos, el metro no tiene error. (Si `pisos.csv` estuviera vacío, el
+  ascensor se compararía contra el barómetro.)
 - Sin coordenadas reales, el mapa del metro se dibuja con el eje x en la dirección inicial de cada viaje.
 - Como trazado real se usa la línea recta entre estaciones. No tenemos la forma de la vía.
 - Sin magnetómetro (MPU-6500), el rumbo sale solo del giroscopio y su error crece con el tiempo.

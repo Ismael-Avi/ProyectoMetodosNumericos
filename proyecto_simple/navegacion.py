@@ -32,7 +32,7 @@ VELOCIDAD_MIN_PENDIENTE = 1.0
 SENO_MAX = 0.1
 REBOTE_BOTON_S = 1.0
 BLOQUE_DERIVA_S = 600.0
-OPCIONES = {"botones": False, "recorte": 0.0}
+OPCIONES = {"botones": False, "recorte": 0.0, "hasta": None}
 
 BMP280_EJEMPLO = {"dig_T1": 27504, "dig_T2": 26435, "dig_T3": -1000,
                   "dig_P1": 36477, "dig_P2": -10685, "dig_P3": 3024, "dig_P4": 2855,
@@ -61,7 +61,11 @@ USO = """Uso:
   python navegacion.py metro     datos/sesion_NNN [datos/sesion_MMM ...]
 Opciones (para cualquier comando con sesion):
   --botones      usar solo desde la primera hasta la ultima pulsacion del boton
-  --recorte N    quitar N segundos al inicio y al final (despues de --botones si se usan los dos)"""
+  --recorte N    quitar N segundos al inicio y al final (despues de --botones si se usan los dos)
+  --hasta T      usar la sesion solo hasta T segundos (tiempo desde la primera muestra del IMU)
+Archivos opcionales en la carpeta de la sesion:
+  eventos_corregidos.csv  se usa en vez de eventos.csv (pulsos corregidos a mano)
+  paradas.csv             piso de cada parada (ascensor), en vez del piso mas cercano"""
 
 
 def bmp280(adc_T, adc_P, c):
@@ -90,9 +94,13 @@ def leer_sesion(carpeta):
         meta = json.load(f)
     imu = pd.read_csv(os.path.join(carpeta, "imu.csv"))
     baro = pd.read_csv(os.path.join(carpeta, "baro.csv"))
-    eventos = pd.read_csv(os.path.join(carpeta, "eventos.csv"))
+    # Si alguien corrigio los pulsos a mano (faltantes, dobles), se usa ese archivo; eventos.csv no se toca.
+    archivo_eventos = "eventos_corregidos.csv"
+    if not os.path.exists(os.path.join(carpeta, archivo_eventos)):
+        archivo_eventos = "eventos.csv"
+    eventos = pd.read_csv(os.path.join(carpeta, archivo_eventos))
     t0 = imu["t_us"].iloc[0]
-    s = {"nombre": os.path.basename(os.path.normpath(carpeta)), "meta": meta}
+    s = {"nombre": os.path.basename(os.path.normpath(carpeta)), "meta": meta, "archivo_eventos": archivo_eventos}
     s["seq"] = imu["seq"].to_numpy()
     s["t_us"] = imu["t_us"].to_numpy()
     s["t"] = (s["t_us"] - t0) / 1e6
@@ -117,6 +125,8 @@ def recortar(s):
     if OPCIONES["botones"] and len(s["eventos"]) >= 2:
         ini, fin = s["eventos"][0], s["eventos"][-1]
     ini, fin = ini + OPCIONES["recorte"], fin - OPCIONES["recorte"]
+    if OPCIONES["hasta"] is not None:
+        fin = min(fin, OPCIONES["hasta"])
     s["recorte"] = ""
     if ini > s["t"][0] or fin < s["t"][-1]:
         s["recorte"] = f"{ini:.1f}-{fin:.1f}"
@@ -135,6 +145,12 @@ def texto_recorte(s):
     if s["recorte"] == "":
         return "registro completo"
     return f"recortado: se usa de {s['recorte'].replace('-', ' a ')} s"
+
+
+def texto_eventos(s):
+    if s["archivo_eventos"] == "eventos.csv":
+        return "pulsos del boton: eventos.csv"
+    return f"pulsos del boton: {s['archivo_eventos']} (corregidos a mano; se usa EN VEZ de eventos.csv)"
 
 
 def decir(r, texto):
@@ -223,8 +239,8 @@ def mascara_movimiento(s):
         mov = np.zeros(len(s["t"]), dtype=bool)
         for k in range(0, len(ev), 2):
             mov = mov | ((s["t"] >= ev[k]) & (s["t"] <= ev[k + 1]))
-        return mov, "eventos.csv (pares salida/llegada)"
-    return ~detectar_quieto(s["t"], s["acc"], s["giro"]), "detector de quietud (eventos.csv vacio o impar)"
+        return mov, f"{s['archivo_eventos']} (pares salida/llegada)"
+    return ~detectar_quieto(s["t"], s["acc"], s["giro"]), f"detector de quietud ({s['archivo_eventos']} vacio o impar)"
 
 
 def reposo_inicial(s):
@@ -315,7 +331,7 @@ def comando_verificar(carpeta):
     fs = 1 / np.median(np.diff(s["t"]))
     decir(r, f"Requisito >= 100 Hz: {'cumple' if fs >= 100 else 'NO cumple'}; "
              f"requisito 90 min sin perdidas: {'cumple' if s['duracion'] >= 5400 and p1 == 0 else 'no (registro mas corto o con perdidas)'}")
-    decir(r, f"Eventos del boton: {len(s['eventos'])} en [{', '.join(f'{e:.1f}' for e in s['eventos'])}] s "
+    decir(r, f"Eventos del boton ({texto_eventos(s)}): {len(s['eventos'])} en [{', '.join(f'{e:.1f}' for e in s['eventos'])}] s "
              f"(se ignoraron {s['rebotes']} pulsaciones a menos de {REBOTE_BOTON_S} s de la anterior: rebote)")
     decir(r, f"|a| medio {np.linalg.norm(s['acc'], axis=1).mean():.3f} m/s² (g Quito {G}), "
              f"giroscopio medio {np.round(np.degrees(s['giro'].mean(axis=0)), 3)} °/s, "
@@ -611,8 +627,21 @@ def comando_metodos():
 
 
 def leer_pisos():
-    pisos = pd.read_csv(PISOS)
-    return np.sort(pisos["altura_m"].dropna().to_numpy(float))
+    # {numero de piso: altura en m}
+    pisos = pd.read_csv(PISOS).dropna(subset=["altura_m"])
+    return dict(zip(pisos["piso"].astype(int), pisos["altura_m"].astype(float)))
+
+
+def leer_paradas(carpeta, n_paradas, r):
+    # paradas.csv: una fila por parada (la primera es el reposo inicial) con el piso donde estaba.
+    archivo = os.path.join(carpeta, "paradas.csv")
+    if not os.path.exists(archivo):
+        return None
+    pisos = pd.read_csv(archivo)["piso"].astype(int).tolist()
+    if len(pisos) != n_paradas:
+        decir(r, f"AVISO: paradas.csv tiene {len(pisos)} paradas pero se detectaron {n_paradas}; no se usa")
+        return None
+    return pisos
 
 
 def comando_ascensor(carpeta):
@@ -632,6 +661,7 @@ def comando_ascensor(carpeta):
     decir(r, f"Reposo inicial: de {t[rep][0]:.1f} a {t[rep][-1]:.1f} s; |g| medido {np.linalg.norm(g_vec):.4f} m/s²; inclinacion "
              f"{np.degrees(np.arccos(arriba[2])):.2f}°; sesgo vertical b = {b:+.4f} m/s²; ruido {ruido:.4f} m/s²")
     mov, fuente = mascara_movimiento(s)
+    decir(r, texto_eventos(s))
     decir(r, f"Paradas (ZUPT) segun {fuente}")
     hb, hb_imu = altura_baro_en_imu(s, rep)
     v_zupt = velocidad_zupt(t, a_corr, mov, trapecio)
@@ -645,8 +675,14 @@ def comando_ascensor(carpeta):
            "fusion acel+baro + ZUPT": h_f}
     paradas = tramos(~mov)
     h_paradas = {k: np.array([h[i0:i1].mean() for i0, i1 in paradas]) for k, h in est.items()}
-    pisos = leer_pisos()
-    if len(pisos) > 0:
+    alturas = leer_pisos()
+    pisos = np.sort(list(alturas.values()))
+    piso_de_parada = leer_paradas(carpeta, len(paradas), r) if len(pisos) > 0 else None
+    if piso_de_parada is not None:
+        ref = np.array([alturas[p] for p in piso_de_parada])
+        niveles = pisos
+        nombre_ref = "piso de cada parada (paradas.csv), altura de pisos.csv"
+    elif len(pisos) > 0:
         ref = np.array([pisos[np.argmin(np.abs(pisos - h))] for h in h_paradas["fusion acel+baro + ZUPT"]])
         niveles = pisos
         nombre_ref = "piso real mas cercano (pisos.csv)"
@@ -667,20 +703,37 @@ def comando_ascensor(carpeta):
         e = h_paradas[k] - ref
         errores[k] = e
         decir(r, f"  {k:28s} | {np.sqrt(np.mean(e ** 2)):10.3f} | {np.abs(e).max():10.3f} | {est[k][-1]:9.3f}")
-    decir(r, "parada | t (s) | baro (m) | trapecio+ZUPT (m) | fusion (m) | referencia (m) | error fusion (m)")
+    decir(r, "parada | piso | t (s) | baro (m) | trapecio+ZUPT (m) | fusion (m) | referencia (m) | error fusion (m)")
     for j, (i0, i1) in enumerate(paradas):
-        decir(r, f"  {j:2d} | {t[i0]:7.1f} | {h_paradas['solo barometro'][j]:7.2f} | {h_paradas['trapecio - sesgo + ZUPT'][j]:7.2f} | "
+        piso = "-" if piso_de_parada is None else piso_de_parada[j]
+        decir(r, f"  {j:2d} | {piso} | {t[i0]:7.1f} | {h_paradas['solo barometro'][j]:7.2f} | {h_paradas['trapecio - sesgo + ZUPT'][j]:7.2f} | "
                  f"{h_paradas['fusion acel+baro + ZUPT'][j]:7.2f} | {ref[j]:7.2f} | {errores['fusion acel+baro + ZUPT'][j]:+.3f}")
+    if piso_de_parada is not None:
+        # Desnivel de cada recorrido: compara los metodos entre si (coherencia) y con la cinta.
+        decir(r, "Desnivel de cada recorrido (altura de la parada de llegada - la de salida):")
+        decir(r, "recorrido | real (m) | baro (m) | trapecio+ZUPT (m) | fusion (m) | baro - acel (m) | fusion - real (m)")
+        for k in range(len(paradas) - 1):
+            d = {m: h_paradas[m][k + 1] - h_paradas[m][k] for m in ["solo barometro", "trapecio - sesgo + ZUPT", "fusion acel+baro + ZUPT"]}
+            real = ref[k + 1] - ref[k]
+            decir(r, f"  {k + 1:2d} {piso_de_parada[k]}->{piso_de_parada[k + 1]} | {real:6.2f} | {d['solo barometro']:6.2f} | "
+                     f"{d['trapecio - sesgo + ZUPT']:6.2f} | {d['fusion acel+baro + ZUPT']:6.2f} | "
+                     f"{d['solo barometro'] - d['trapecio - sesgo + ZUPT']:+.2f} | {d['fusion acel+baro + ZUPT'] - real:+.2f}")
     cruces = []
-    for i0, i1 in tramos(mov):
-        for nivel in niveles:
-            if (h_f[i0] - nivel) * (h_f[i1 - 1] - nivel) < 0 and min(abs(h_f[i0] - nivel), abs(h_f[i1 - 1] - nivel)) > 0.5:
+    for k, (i0, i1) in enumerate(tramos(mov)):
+        if piso_de_parada is not None:
+            # se sabe de que piso a que piso fue: solo se buscan los pisos que quedan en medio
+            bajo, alto = sorted(piso_de_parada[k:k + 2])
+            buscar = [(p, alturas[p]) for p in sorted(alturas) if bajo < p < alto]
+        else:
+            buscar = [(None, n) for n in niveles if min(abs(h_f[i0] - n), abs(h_f[i1 - 1] - n)) > 0.5]
+        for piso, nivel in buscar:
+            if (h_f[i0] - nivel) * (h_f[i1 - 1] - nivel) < 0:
                 def altura_menos_nivel(tt):
                     return interpolar(t, h_f, np.array([tt]))[0] - nivel
-                cruces.append((biseccion(altura_menos_nivel, t[i0], t[i1 - 1]), nivel))
-    decir(r, f"Cruces de pisos intermedios por biseccion (fusion; la llegada la marca eventos.csv): {len(cruces)}")
-    for tc, nivel in sorted(cruces):
-        decir(r, f"  t = {tc:8.3f} s cruza {nivel:6.2f} m")
+                cruces.append((biseccion(altura_menos_nivel, t[i0], t[i1 - 1]), nivel, piso, k + 1))
+    decir(r, f"Cruces de pisos intermedios por biseccion (fusion; la llegada la marca {s['archivo_eventos']}): {len(cruces)}")
+    for tc, nivel, piso, k in sorted(cruces):
+        decir(r, f"  recorrido {k:2d}: t = {tc:8.3f} s cruza {nivel:6.2f} m" + ("" if piso is None else f" (piso {piso})"))
     t_fin = s["duracion"]
     obs_sin = abs(est["trapecio sin correccion"][-1] - h_f[-1])
     obs_con = abs(est["trapecio - sesgo"][-1] - h_f[-1])
@@ -870,6 +923,10 @@ def main():
     if "--recorte" in args:
         i = args.index("--recorte")
         OPCIONES["recorte"] = float(args[i + 1])
+        del args[i:i + 2]
+    if "--hasta" in args:
+        i = args.index("--hasta")
+        OPCIONES["hasta"] = float(args[i + 1])
         del args[i:i + 2]
     comandos = {"verificar": comando_verificar, "reposo": comando_reposo, "caras": comando_caras, "ascensor": comando_ascensor}
     if len(args) == 1 and args[0] == "metodos":
